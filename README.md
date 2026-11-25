@@ -1,8 +1,8 @@
 # Wednesday 25 November 2026 — The Day in World News
 
-[![Competition](https://img.shields.io/badge/make.fun-news--image--20261125-blue)](https://make.fun/competitions/news-image-20261125)
-[![Prize](https://img.shields.io/badge/prize-%24100-gold)](https://make.fun/competitions/news-image-20261125)
-[![Deadline](https://img.shields.io/badge/deadline-27%20Nov%202026-red)](https://make.fun/competitions/news-image-20261125)
+[![news-image-20261125](https://make.fun/badge/news-image-20261125.svg)](https://make.fun/c/news-image-20261125)
+[![rank](https://make.fun/badge/news-image-20261125/jonjet155/news-image-20261125/rank.svg)](https://make.fun/c/news-image-20261125)
+[![reward](https://make.fun/badge/news-image-20261125/jonjet155/news-image-20261125/reward.svg)](https://make.fun/c/news-image-20261125)
 
 One image summing up 25 November 2026's world news: 34 stories across
 7 regions — Section 301 tariffs loom over 16 economies, Shenzhou-24 lifts

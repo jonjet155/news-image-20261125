@@ -128,7 +128,7 @@ SMALLS = [
          deck="Nvidia chief admits 'terrible mistakes'; denies Trump role.",
          source="NYT  •  REUTERS", chip="CONFIRMED", art="chip"),
     dict(num=8, kicker="08  •  MIDDLETOWN  •  USA",
-         headline="ARMY TO BLAST 10,000 LB IN IOWA",
+         headline="ARMY TO BLAST 9,500 LB IN IOWA",
          deck="68 drums go up at 09:00 CST; lead dust may drift 100 miles.",
          source="AP  •  US ARMY", chip="FORECAST", art="blast"),
     dict(num=9, kicker="09  •  SAN JUAN  •  CULTURE",
@@ -164,9 +164,9 @@ ALSO_ON = [
     (21, "Senegal are reinstated as Africa Cup of Nations champions after CAS upholds their appeal.", "Straits Times", "Africa"),
     (22, "Russian warplanes trigger alarm among US partners in Asia, the WSJ reports.", "WSJ", "Asia-Pacific"),
     (23, "Kashiwa beat Newcastle in the AFC Champions League Elite.", "AFC", "Asia-Pacific"),
-    (24, "Real Madrid hit PSV for five in the Champions League; Man City and Arsenal are held.", "myKhel", "Europe"),
+    (24, "EU leaders meet Western Balkan counterparts at a summit in Brussels.", "EU Council", "Europe"),
     (25, "Balloons for Macy's 100th Thanksgiving parade inflate in New York on Wednesday.", "AFAR", "Americas"),
-    (26, "Huang heads to Capitol Hill after his Trump-backed return to Nvidia.", "Around Prague", "Americas"),
+    (26, "Lawmakers in both parties attack Huang's reinstatement; hearings set for Dec 1–3.", "WSJ", "Americas"),
     (27, "Liverpool visit Club Brugge and Bayern travel to Lille as the Champions League continues.", "BBC", "Europe"),
     (28, "A fourth oil tanker hits a mine in the Strait of Hormuz and catches fire.", "ET EnergyWorld", "Middle East"),
     (29, "Oil prices fall as supply glut fears offset Middle East disruption worries; Brent $90.97.", "Reuters", "Global"),
@@ -177,8 +177,8 @@ ALSO_ON = [
     (34, "The BBC asks whether Indonesia faces a social reckoning.", "BBC", "Asia-Pacific"),
 ]
 
-REGIONS = [("AMERICAS", 10), ("ASIA-PACIFIC", 6), ("MIDDLE EAST", 5),
-           ("AFRICA", 4), ("EUROPE", 3), ("OCEANIA", 3), ("GLOBAL", 3)]
+REGIONS = [("AMERICAS", 10), ("ASIA-PACIFIC", 7), ("MIDDLE EAST", 5),
+           ("AFRICA", 4), ("EUROPE", 3), ("OCEANIA", 3), ("GLOBAL", 2)]
 
 NUMBERS = [
     ("34", "STORIES"),
@@ -204,14 +204,14 @@ DATE_CHECK = ("DATE CHECK  •  Wires read up to 05:30 UTC, Wed 25 Nov 2026. "
     "Shanghai party boss Chen Jining (Tue 24 Nov); Houthi drone strike on "
     "Riyadh tower, 11 hurt (Tue 24 Nov); Ukraine sinks Russian corvette "
     "Merkury off Libya (struck Sun 22 Nov, confirmed Mon 23 Nov); COP31 ends "
-    "without a deal (Sun 22 Nov). Not yet: Section 301 tariff rates "
+    "without a deal (Sun 22 Nov); Real Madrid 5–1 PSV (Tue 24 Nov). Not yet: Section 301 tariff rates "
     "(pending); Iowa blast outcome (due 15:00 UTC); Sweden PM vote "
     "(not yet held).")
 
 FOOTER = ("Every story here was reported on Wed 25 Nov 2026 in at least one "
     "time zone. Sources: AP, BBC, Reuters, Xinhua, NYT, USA Today, WSJ, HRW, "
-    "ABC, The Diplomat, AFC, myKhel, AFAR, Straits Times, Anadolu, "
-    "ET EnergyWorld. Original drawings.")
+    "ABC, The Diplomat, AFC, AFAR, Straits Times, Anadolu, "
+    "ET EnergyWorld, EU Council. Original drawings.")
 
 
 # ---- flat-vector art scenes (each draws inside box x,y,w,h) ----
@@ -495,16 +495,16 @@ PINS = [
     (10, 178.4, -17.7, 0, 0),
     (11, 146.5, -19.0, 0, 0),
     (12, -122.4, 37.8, 0, 0),
-    (13, 114.2, 22.3, -12, 6),
+    (13, 114.2, 22.3, -4, -2),
 ]
 
 # small islands drawn exaggerated (a few px) so their pins sit on land:
 # (lon, lat, rx, ry) in map px
 ISLANDS = [
-    (121.0, 23.7, 5, 8),    # Taiwan
-    (160.0, -9.4, 6, 4),    # Solomon Islands
-    (178.4, -17.7, 5, 4),   # Fiji
-    (-66.1, 18.5, 6, 3),    # Puerto Rico
+    (121.0, 23.7, 12, 11),  # Taiwan — pin 7 sits fully on it
+    (160.0, -9.4, 13, 12),  # Solomon Islands — green extends past pin 5
+    (178.4, -17.7, 13, 12),  # Fiji — green extends past pin 10
+    (-66.1, 18.5, 13, 12),  # Puerto Rico — green extends past pin 9
 ]
 
 
@@ -533,6 +533,8 @@ def draw_map(d, x, y, w, h):
         fnt = font(8, bold=True)
         tw = d.textlength(str(num), font=fnt)
         d.text((cx - tw / 2, cy - 6), str(num), font=fnt, fill=WHITE)
+    # redraw the map border (island blobs near the edge may overdraw it)
+    d.rectangle([x, y, x + w, y + h], outline=NAVY, width=1)
 
 
 # ---- compose ----
