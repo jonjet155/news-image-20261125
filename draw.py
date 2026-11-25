@@ -174,11 +174,11 @@ ALSO_ON = [
     (31, "Morocco's Ayyoub Bouaddi becomes his country's youngest Champions League scorer.", "AfricaSoccer", "Africa"),
     (32, "The US attorney general sidesteps questions on the Nvidia investigation.", "OzArab Media", "Americas"),
     (33, "Canada's foreign minister Anita Anand talks to the BBC about shaping a new world order.", "BBC", "Americas"),
-    (34, "The BBC asks whether Indonesia faces a social reckoning.", "BBC", "Asia-Pacific"),
+    (34, "Veteran Nollywood actor Pete Edochie dies aged 79 after a prostate cancer battle.", "BBC", "Africa"),
 ]
 
-REGIONS = [("AMERICAS", 10), ("ASIA-PACIFIC", 7), ("MIDDLE EAST", 5),
-           ("AFRICA", 4), ("EUROPE", 3), ("OCEANIA", 3), ("GLOBAL", 2)]
+REGIONS = [("AMERICAS", 10), ("ASIA-PACIFIC", 6), ("MIDDLE EAST", 5),
+           ("AFRICA", 5), ("EUROPE", 3), ("OCEANIA", 3), ("GLOBAL", 2)]
 
 NUMBERS = [
     ("34", "STORIES"),
@@ -301,13 +301,16 @@ def art_aden(d, x, y, w, h):
 def art_chip(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=(27, 42, 74))
     cx, cy = x + w // 2, y + h // 2
-    d.rectangle([cx - 22, cy - 18, cx + 22, cy + 18], fill=TEAL,
-                outline=MUSTARD, width=3)
+    # circuit traces: horizontal pins only (box is ~42 px tall; no
+    # vertical traces — they would paint over the headline/deck)
     for k in range(3):
-        d.line([cx - 34, cy - 10 + k * 10, cx - 22, cy - 10 + k * 10],
+        d.line([cx - 44, cy - 10 + k * 10, cx - 30, cy - 10 + k * 10],
                fill=MUSTARD, width=3)
-        d.line([cx + 22, cy - 10 + k * 10, cx + 34, cy - 10 + k * 10],
+        d.line([cx + 30, cy - 10 + k * 10, cx + 44, cy - 10 + k * 10],
                fill=MUSTARD, width=3)
+    d.rectangle([cx - 30, cy - 20, cx + 30, cy + 20], fill=TEAL,
+                outline=MUSTARD, width=3)
+    d.rectangle([cx - 22, cy - 12, cx + 22, cy + 12], outline=WHITE, width=1)
     d.text((cx - 9, cy - 9), "AI", font=font(13, bold=True), fill=WHITE)
 
 
@@ -501,10 +504,10 @@ PINS = [
 # small islands drawn exaggerated (a few px) so their pins sit on land:
 # (lon, lat, rx, ry) in map px
 ISLANDS = [
-    (121.0, 23.7, 12, 11),  # Taiwan — pin 7 sits fully on it
-    (160.0, -9.4, 13, 12),  # Solomon Islands — green extends past pin 5
-    (178.4, -17.7, 13, 12),  # Fiji — green extends past pin 10
-    (-66.1, 18.5, 13, 12),  # Puerto Rico — green extends past pin 9
+    (121.0, 23.7, 16, 14),  # Taiwan — pin 7 sits fully on it
+    (160.0, -9.4, 17, 16),  # Solomon Islands — green extends past pin 5
+    (178.4, -17.7, 17, 16),  # Fiji — green extends past pin 10
+    (-66.1, 18.5, 17, 16),  # Puerto Rico — green extends past pin 9
 ]
 
 
@@ -528,6 +531,8 @@ def draw_map(d, x, y, w, h):
         if dx or dy:
             d.line([tx, ty, cx, cy], fill=NAVY, width=1)
             d.ellipse([tx - 2, ty - 2, tx + 2, ty + 2], fill=NAVY)
+        # white halo so the pin reads anchored on land even at 300 px
+        d.ellipse([cx - 11, cy - 11, cx + 11, cy + 11], fill=WHITE)
         d.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=RED,
                   outline=WHITE, width=2)
         fnt = font(8, bold=True)
