@@ -245,8 +245,8 @@ STORIES = [
          text="Bouaddi is Morocco's youngest UCL scorer.",
          source="AfricaSoccer", ver="O"),
     dict(num=32, region="N. AMERICA", field="Business",
-         text="US attorney general sidesteps Nvidia probe questions.",
-         source="ABC", ver="R"),
+         text="DOJ opened no probe into Huang before return, sources say.",
+         source="Reuters", ver="R"),
     dict(num=33, region="N. AMERICA", field="Diplomacy",
          text="Canada's Anita Anand talks to the BBC on a new world order.",
          source="BBC", ver="R"),
@@ -260,8 +260,9 @@ STORIES = [
          text="Poundland falls into administration; 12,000 jobs at risk.",
          source="Reuters", ver="R"),
     dict(num=37, region="LATIN AMERICA", field="Markets",
-         text="Peso hits record low past 1,600; country risk tops 1,100.",
-         source="Bloomberg Línea", ver="R"),
+         text="Argentina's peso hits record low past 1,600; country risk "
+              "tops 1,100.",
+         source="Bloomberg", ver="R"),
     dict(num=38, region="N. AMERICA", field="Disaster",
          text="Iowa blast destroys 9,500 lb; EPA finds zero airborne lead.",
          source="AP", ver="O"),
@@ -339,32 +340,41 @@ FOOTER = ("Sources: Reuters, AP, BBC, Xinhua, NYT, WSJ, HRW, ABC, "
 # ---- flat-vector art scenes (each draws inside box x,y,w,h) ----
 def art_tariffs(d, x, y, w, h):
     # Port + tariff-rate containers: reads instantly at 300px.
+    # v7: every rate bar carries its country (China 20%, EU 15%,
+    # Vietnam 35%, hanging Japan 15%) - deck: EU/Japan/Korea/Taiwan 15%.
     d.rectangle([x, y, x + w, y + h], fill=(233, 196, 106))
     d.rectangle([x, y + h - 8, x + w, y + h], fill=BROWN)
     # big % stamp, top left
     d.ellipse([x + 8, y + 2, x + 40, y + 34], fill=NAVY)
     d.text((x + 14, y + 8), "%", font=font(20, bold=True), fill=MUSTARD)
-    # rate-labelled containers along the quay
-    rates = [("20%", CORAL), ("15%", TEAL), ("35%", NAVY)]
-    for i, (lab, col) in enumerate(rates):
-        bx = x + 48 + i * 62
-        by = y + h - 32
-        d.rectangle([bx, by, bx + 56, by + 24], fill=col,
+    # country-labelled containers along the quay
+    rates = [("20%", "CHINA", CORAL), ("15%", "EU", TEAL),
+             ("35%", "VIETNAM", NAVY)]
+    for i, (lab, country, col) in enumerate(rates):
+        bx = x + 46 + i * 58
+        by = y + h - 42
+        d.rectangle([bx, by, bx + 52, by + 34], fill=col,
                     outline=WHITE, width=2)
-        for k in (4, 20):
-            d.line([bx + 6, by + k, bx + 50, by + k], fill=WHITE,
-                   width=1)
         fnt = font(11, bold=True)
-        d.text((bx + 28 - d.textlength(lab, font=fnt) / 2, by + 6), lab,
+        d.text((bx + 26 - d.textlength(lab, font=fnt) / 2, by + 4), lab,
                font=fnt, fill=WHITE)
-    # gantry crane, right: mast, jib, cable, hanging container
+        cfnt = font(7, bold=True)
+        d.text((bx + 26 - d.textlength(country, font=cfnt) / 2, by + 20),
+               country, font=cfnt, fill=WHITE)
+    # gantry crane, right: mast, jib, cable, hanging container (Japan 15%)
     d.rectangle([x + w - 52, y + 4, x + w - 46, y + h - 8], fill=NAVY)
     d.rectangle([x + w - 108, y + 4, x + w - 40, y + 10], fill=NAVY)
-    d.line([x + w - 84, y + 10, x + w - 84, y + h - 30], fill=NAVY, width=2)
-    d.rectangle([x + w - 102, y + h - 30, x + w - 66, y + h - 8],
-                fill=CORAL, outline=WHITE, width=2)
-    d.text((x + w - 96, y + h - 26), "20%", font=font(9, bold=True),
-           fill=WHITE)
+    d.line([x + w - 84, y + 10, x + w - 84, y + h - 37], fill=NAVY, width=2)
+    hx = x + w - 102
+    hy = y + h - 37
+    d.rectangle([hx, hy, hx + 36, hy + 22], fill=CORAL,
+                outline=WHITE, width=2)
+    hfnt = font(8, bold=True)
+    d.text((hx + 18 - d.textlength("15%", font=hfnt) / 2, hy + 2), "15%",
+           font=hfnt, fill=WHITE)
+    hcfnt = font(6, bold=True)
+    d.text((hx + 18 - d.textlength("JAPAN", font=hcfnt) / 2, hy + 12),
+           "JAPAN", font=hcfnt, fill=WHITE)
 
 
 def art_chart(d, x, y, w, h):
@@ -381,7 +391,7 @@ def art_chart(d, x, y, w, h):
 def art_rocket(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=NAVY)
     for sx, sy in [(14, 12), (40, 26), (70, 8), (w - 30, 16),
-                   (w - 52, 34), (24, 48), (w - 18, 52)]:
+                   (w - 52, 34), (24, 18), (w - 18, 52)]:
         d.ellipse([x + sx - 2, y + sy - 2, x + sx + 2, y + sy + 2], fill=WHITE)
     cx = x + w // 2
     bw = max(10, w // 12)
@@ -399,6 +409,9 @@ def art_rocket(d, x, y, w, h):
                 fill=MUSTARD)
     d.polygon([(cx - 4, y + h - 2), (cx + 4, y + h - 2), (cx, y + body1)],
               fill=(255, 200, 60))
+    # v7: font 8 - font 9 ran the "K" of DOCK into the rocket flame
+    # (145.7px vs 129.5px); the real v6 defect was the star at (24,48)
+    # overlapping "00", already moved to (24,18) above.
     d.text((x + 6, y + h - 13), "00:18 LAUNCH  •  03:56 DOCK",
            font=font(8, bold=True), fill=MUSTARD)
 
@@ -632,6 +645,9 @@ CONTINENTS = [
      (109, -1)],
     [(131, -1), (136, -2), (141, -3), (146, -6), (150, -8), (147, -9),
      (143, -8), (138, -7), (134, -4), (131, -1)],
+    # Solomon Islands (v7: pin 7 sits on this blob, NE of Australia)
+    [(153, -6), (156, -4), (160, -5), (164, -7), (165, -10), (162, -13),
+     (157, -13), (153, -10)],
     [(114, -22), (114, -30), (115, -34), (118, -35), (124, -33),
      (129, -32), (132, -32), (135, -35), (138, -35), (140, -38),
      (145, -38), (150, -37), (153, -32), (153, -27), (150, -23),
@@ -644,19 +660,22 @@ CONTINENTS = [
 
 # pins: (story, lon, lat, dx, dy) - dx/dy nudge the drawn pin off the true
 # spot so the Gaza / Jerusalem / Giza cluster does not collide. Every nudged
-# centre still sits on drawn land (verified from render pixels).
+# centre still sits on drawn land (v7: verified from RENDER pixels - centre
+# + r=3 ring on green land for all 13 pins; v6 lon/lat-only check was wrong).
 PINS = [
     (1, -77.0, 39.0, 0, 0),      # Washington
-    (2, 127.0, 37.5, -2, -1),    # Seoul (nudge: crude polygon's peninsula is 1px wide)
+    (2, 127.0, 37.5, -8, -2),    # Seoul: nudged onto mainland China (v7)
     (3, 98.5, 39.8, 0, 0),       # Jiuquan
     (4, 30.5, 50.4, 0, 0),       # Kyiv
     (5, 50.1, 26.6, 8, 0),       # Ras Tanura
-    (6, -0.1, 51.5, 0, 0),       # London
-    (7, 149.1, -35.3, 0, 0),     # Canberra
+    (6, -0.1, 51.5, 5, 1),       # London: nudged onto mainland Europe (v7)
+    (7, 159.0, -8.5, 0, 0),      # Solomon Islands (v7: was Canberra, pin sat
+                                 # in the sea SE of Australia; story is the
+                                 # Solomons pact, pinned on the Solomons blob)
     (8, 90.4, 23.8, 0, 0),       # Dhaka
-    (9, 106.8, -6.6, 0, -1),     # Bogor (nudge: centre was 1px off the Java strip)
+    (9, 106.8, -6.6, 0, -7),     # Bogor: nudged to mid-Java strip (v7)
     (10, 34.5, 31.5, -18, 20),   # Gaza City
-    (11, 18.4, -33.9, 0, -1),    # Cape Town (nudge: centre was on the coastline)
+    (11, 18.4, -33.9, 4, -6),    # Cape Town: nudged inland off the tip (v7)
     (12, 35.2, 31.8, 12, -12),   # Jerusalem
     (13, 31.2, 30.0, 2, 20),     # Giza
 ]
