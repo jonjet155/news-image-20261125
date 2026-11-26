@@ -97,9 +97,9 @@ def chip(d, x, y, label):
 # ---- story data (all verified 25 Nov 2026 in at least one time zone) ----
 HEROES = [
     dict(num=1, kicker="01  •  WASHINGTON  •  TRADE",
-         headline="TRUMP SET TO UNVEIL SECTION 301 TARIFFS ON 16 ECONOMIES",
-         deck="USTR to propose new duties on China, the EU, Japan and others; rates still unknown.",
-         source="AP  •  BBC", chip="REPORTED", art="tariffs"),
+         headline="US UNVEILS SECTION 301 TARIFFS ON 14 ECONOMIES",
+         deck="China: 20% new on top of ~25% (total ~45%); Vietnam 20%; EU, Japan, Korea, Taiwan capped 15%.",
+         source="REUTERS  •  AP", chip="CONFIRMED", art="tariffs"),
     dict(num=2, kicker="02  •  JIUQUAN  •  SPACE",
          headline="SHENZHOU-24 LIFTS OFF WITH PAKISTAN'S FIRST ASTRONAUT",
          deck="Muhammad Zeeshan Ali, 40, joins Tang Hongbo and Wu Yi aboard Tiangong station.",
@@ -128,9 +128,9 @@ SMALLS = [
          deck="Nvidia chief admits 'terrible mistakes'; denies Trump role.",
          source="NYT  •  REUTERS", chip="CONFIRMED", art="chip"),
     dict(num=8, kicker="08  •  MIDDLETOWN  •  USA",
-         headline="ARMY TO BLAST 9,500 LB IN IOWA",
-         deck="68 drums go up at 09:00 CST; lead dust may drift 100 miles.",
-         source="AP  •  US ARMY", chip="FORECAST", art="blast"),
+         headline="ARMY BLASTS 9,500 LB IN IOWA",
+         deck="68 drums destroyed at 09:00 CST; EPA finds zero airborne lead.",
+         source="AP  •  US ARMY", chip="CONFIRMED", art="blast"),
     dict(num=9, kicker="09  •  SAN JUAN  •  CULTURE",
          headline="75TH MISS UNIVERSE CROWNED",
          deck="Jennifer Barreto of Puerto Rico wins; first mother to win.",
@@ -148,8 +148,8 @@ SMALLS = [
          deck="King tides and El Nino surf threaten the bay and the coast.",
          source="INSIDE CLIMATE NEWS", chip="FORECAST", art="waves"),
     dict(num=13, kicker="13  •  HONG KONG  •  RIGHTS",
-         headline="HONG KONG FIRE: WARNING A YEAR ON",
-         deck="Rights group marks a year on, urges free expression.",
+         headline="WARNING AHEAD OF FIRE ANNIVERSARY",
+         deck="HRW urges free expression ahead of Tai Po anniversary.",
          source="HRW", chip="OFFICIALS", art="hongkong"),
 ]
 
@@ -174,44 +174,44 @@ ALSO_ON = [
     (31, "Morocco's Ayyoub Bouaddi becomes his country's youngest Champions League scorer.", "AfricaSoccer", "Africa"),
     (32, "The US attorney general sidesteps questions on the Nvidia investigation.", "OzArab Media", "Americas"),
     (33, "Canada's foreign minister Anita Anand talks to the BBC about shaping a new world order.", "BBC", "Americas"),
-    (34, "The BBC asks whether Indonesia faces a social reckoning.", "BBC", "Asia-Pacific"),
+    (34, "Veteran Nollywood actor Pete Edochie dies Wed 25 Nov, aged 79, after a prostate cancer battle.", "BBC", "Africa"),
 ]
 
-REGIONS = [("AMERICAS", 10), ("ASIA-PACIFIC", 7), ("MIDDLE EAST", 5),
-           ("AFRICA", 4), ("EUROPE", 3), ("OCEANIA", 3), ("GLOBAL", 2)]
+REGIONS = [("AMERICAS", 10), ("ASIA-PACIFIC", 6), ("MIDDLE EAST", 5),
+           ("AFRICA", 5), ("EUROPE", 3), ("OCEANIA", 3), ("GLOBAL", 2)]
 
 NUMBERS = [
     ("34", "STORIES"),
     ("7", "REGIONS"),
-    ("16", "ECONOMIES IN TARIFF PROBE"),
+    ("14", "ECONOMIES TARIFFED"),
     ("5.3%", "KOSPI FALL"),
     ("60 KM", "HOUTHIS FROM ADEN"),
-    ("9,500 LB", "LEAD AZIDE TO DETONATE"),
+    ("9,500 LB", "LEAD AZIDE DESTROYED"),
 ]
 
 TIMELINE = [
     ("00:07", "FIJI DISASTER DECLARED"),
     ("00:18", "SHENZHOU-24 LIFTS OFF"),
-    ("00:52", "AP: TARIFF PLAN REPORTED"),
+    ("00:52", "AP TARIFFS ANNOUNCED"),
     ("02:31", "HORMUZ TANKER HIT"),
     ("04:20", "MISS UNIVERSE CROWNED"),
-    ("15:00", "IOWA BLAST DUE"),
+    ("15:00", "IOWA BLAST DONE"),
 ]
 
-DATE_CHECK = ("DATE CHECK  •  Wires read up to 05:30 UTC, Wed 25 Nov 2026. "
+DATE_CHECK = ("DATE CHECK  •  Wires read up to 19:00 UTC, Wed 25 Nov 2026. "
     "Every story was reported, or still developing, on 25 Nov in at least one "
     "time zone. Left out: Huawei guilty verdict (Tue 24 Nov); China probes "
     "Shanghai party boss Chen Jining (Tue 24 Nov); Houthi drone strike on "
     "Riyadh tower, 11 hurt (Tue 24 Nov); Ukraine sinks Russian corvette "
     "Merkury off Libya (struck Sun 22 Nov, confirmed Mon 23 Nov); COP31 ends "
-    "without a deal (Sun 22 Nov); Real Madrid 5–1 PSV (Tue 24 Nov). Not yet: Section 301 tariff rates "
-    "(pending); Iowa blast outcome (due 15:00 UTC); Sweden PM vote "
+    "without a deal (Sun 22 Nov); Real Madrid 5–1 PSV (Tue 24 Nov). Not yet: Section 301 tariffs in force "
+    "(comment + hearing first; may slip to January); Sweden PM vote "
     "(not yet held).")
 
 FOOTER = ("Every story here was reported on Wed 25 Nov 2026 in at least one "
     "time zone. Sources: AP, BBC, Reuters, Xinhua, NYT, USA Today, WSJ, HRW, "
     "ABC, The Diplomat, AFC, AFAR, Straits Times, Anadolu, "
-    "ET EnergyWorld, EU Council. Original drawings.")
+    "ET EnergyWorld, EU Council, AfricaSoccer, OzArab Media. Original drawings.")
 
 
 # ---- flat-vector art scenes (each draws inside box x,y,w,h) ----
@@ -483,19 +483,19 @@ CONTINENTS = [
 
 # pins: (story, lon, lat, dx, dy) — dx/dy nudge the drawn pin off the true spot
 PINS = [
-    (1, -77.0, 39.0, 6, 8),
+    (1, -77.0, 39.0, 0, 0),
     (2, 98.5, 39.8, -6, -4),
     (3, 51.4, 35.7, 0, 0),
-    (4, 127.0, 37.5, 0, 0),
+    (4, 127.0, 37.5, -10, 0),
     (5, 160.0, -9.4, 0, 0),
-    (6, 45.0, 12.8, 0, 0),
+    (6, 45.0, 12.8, -4, 0),
     (7, 121.6, 25.0, 0, 0),
     (8, -91.3, 40.8, -8, -6),
     (9, -66.1, 18.5, 0, 0),
     (10, 178.4, -17.7, 0, 0),
-    (11, 146.5, -19.0, 0, 0),
-    (12, -122.4, 37.8, 0, 0),
-    (13, 114.2, 22.3, -4, -2),
+    (11, 146.5, -19.0, -4, 0),
+    (12, -122.4, 37.8, 6, 0),
+    (13, 114.2, 22.3, -12, 6),
 ]
 
 # small islands drawn exaggerated (a few px) so their pins sit on land:
@@ -554,7 +554,7 @@ def build():
     d.text((W // 2 - d.textlength(sub, font=font(13, bold=True)) / 2, 86),
            sub, font=font(13, bold=True), fill=WHITE)
     # ticker
-    tick = ("TARIFFS LOOM  •  SHENZHOU-24 LIFTS OFF  •  "
+    tick = ("TARIFFS UNVEILED  •  SHENZHOU-24 LIFTS OFF  •  "
             "IRAN SETS SEVEN CONDITIONS")
     d.text((W // 2 - d.textlength(tick, font=font(11, bold=True)) / 2, 110),
            tick, font=font(11, bold=True), fill=NAVY)
