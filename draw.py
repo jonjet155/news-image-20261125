@@ -852,9 +852,6 @@ def draw_map(d, x, y, w, h):
         if dx or dy:
             d.line([tx, ty, cx, cy], fill=NAVY, width=1)
             d.ellipse([tx - 2, ty - 2, tx + 2, ty + 2], fill=NAVY)
-        if num == 9:
-            # v9: white halo so pin 9 pops off the Java strip at 300px
-            d.ellipse([cx - 10, cy - 10, cx + 10, cy + 10], fill=WHITE)
         d.ellipse([cx - PIN_R, cy - PIN_R, cx + PIN_R, cy + PIN_R],
                   fill=REGION_COLORS[story["region"]], outline=WHITE,
                   width=2)
