@@ -120,8 +120,8 @@ STORIES = [
     dict(num=1, region="N. AMERICA", field="Trade",
          kicker="01  •  WASHINGTON  •  TRADE",
          headline="US proposes tariffs of up to 20% on EU, China and 12 more",
-         deck="China: 20% new (total ~45%); Vietnam up to 35%, 20% with a deal; "
-              "EU, Japan, Korea, Taiwan 15%.",
+         deck="China: 20% new (total ~45%); Vietnam 35% ceiling, 20% with a "
+              "deal; EU, Japan, Korea, Taiwan 15%.",
          why="Two top US trade partners face duties.",
          source="REUTERS  •  AP", ver="O", art="tariffs"),
     dict(num=2, region="EAST & SE ASIA", field="Markets",
@@ -162,7 +162,7 @@ STORIES = [
     dict(num=8, region="SOUTH ASIA", field="Labour",
          kicker="08  •  DHAKA  •  LABOUR",
          headline="Garment workers offered higher minimum wage",
-         deck="Board lifts the minimum 36%, to 17,500 taka a month.",
+         deck="Board lifts the minimum 40% in taka, to 17,500 a month.",
          stat="17,500 TAKA", art="wage"),
     dict(num=9, region="EAST & SE ASIA", field="Disaster",
          kicker="09  •  BOGOR  •  DISASTER",
@@ -211,9 +211,9 @@ STORIES = [
     dict(num=20, region="N. AMERICA", field="Crime",
          text="Fort Hood shooter Hasan seeks stay ahead of execution.",
          source="Reuters", ver="R"),
-    dict(num=21, region="SUB-SAHARAN AFRICA", field="Sport",
-         text="Senegal reinstated as AFCON champions by CAS.",
-         source="Straits Times", ver="O"),
+    dict(num=21, region="LATIN AMERICA", field="Disaster",
+         text="Heavy rains kill at least 8 in southern Brazil.",
+         source="Xinhua", ver="R"),
     dict(num=22, region="EAST & SE ASIA", field="Security",
          text="Russian warplanes trigger alarm among US partners in Asia.",
          source="WSJ", ver="R"),
@@ -226,9 +226,9 @@ STORIES = [
     dict(num=25, region="N. AMERICA", field="Culture",
          text="Balloons for Macy's 100th Thanksgiving parade inflate.",
          source="AFAR", ver="R"),
-    dict(num=26, region="N. AMERICA", field="Tech",
-         text="Lawmakers attack Huang's reinstatement; hearings Dec 1–3.",
-         source="WSJ", ver="R"),
+    dict(num=26, region="EUROPE", field="Politics",
+         text="Puigdemont to return to Spain on Dec 12, ending exile.",
+         source="France 24", ver="R"),
     dict(num=27, region="EUROPE", field="Sport",
          text="Liverpool win 3–0 at Brugge; Lille stun Bayern 2–1.",
          source="UEFA", ver="O"),
@@ -246,7 +246,7 @@ STORIES = [
          source="AfricaSoccer", ver="O"),
     dict(num=32, region="N. AMERICA", field="Business",
          text="US attorney general sidesteps Nvidia probe questions.",
-         source="OzArab Media", ver="R"),
+         source="ABC", ver="R"),
     dict(num=33, region="N. AMERICA", field="Diplomacy",
          text="Canada's Anita Anand talks to the BBC on a new world order.",
          source="BBC", ver="R"),
@@ -256,12 +256,12 @@ STORIES = [
     dict(num=35, region="MIDDLE EAST", field="Diplomacy",
          text="Iran sets seven conditions before any talks with US.",
          source="ET EnergyWorld", ver="O"),
-    dict(num=36, region="MIDDLE EAST", field="War",
-         text="Houthis 60 km from Aden; coalition hits Hodeidah port.",
+    dict(num=36, region="EUROPE", field="Business",
+         text="Poundland falls into administration; 12,000 jobs at risk.",
          source="Reuters", ver="R"),
-    dict(num=37, region="N. AMERICA", field="Tech",
-         text="Huang apologises, is in therapy; denies Trump role.",
-         source="NYT", ver="R"),
+    dict(num=37, region="LATIN AMERICA", field="Markets",
+         text="Peso hits record low past 1,600; country risk tops 1,100.",
+         source="Bloomberg Línea", ver="R"),
     dict(num=38, region="N. AMERICA", field="Disaster",
          text="Iowa blast destroys 9,500 lb; EPA finds zero airborne lead.",
          source="AP", ver="O"),
@@ -300,7 +300,7 @@ STORIES = [
          source="Reuters", ver="R"),
     dict(num=50, region="EUROPE", field="Security",
          text="Poland to set up no-fly zone along Ukraine border.",
-         source="Kilambi", ver="R"),
+         source="Reuters", ver="R"),
 ]
 
 HEROES = STORIES[0:3]
@@ -317,7 +317,9 @@ NUMBERS = [
 
 DATE_CHECK = ("DATE CHECK  •  Wires read up to 23:00 UTC, Wed 25 Nov 2026. "
     "Every story above happened or was first reported on Wednesday "
-    "25 November 2026. Left out: Huawei guilty verdict (Tue 24 Nov); China "
+    "25 November 2026. Left out: Senegal AFCON reinstatement; Huang "
+    "hearings Dec 1–3 and Huang apology (all Tue 24 Nov); Houthis near "
+    "Aden (Tue 24 Nov); Huawei guilty verdict (Tue 24 Nov); China "
     "probes Shanghai party boss Chen Jining (Tue 24 Nov); Houthi drone "
     "strike on Riyadh tower, 11 hurt (Tue 24 Nov); Ukraine sinks Russian "
     "corvette Merkury off Libya (struck Sun 22 Nov, confirmed Mon 23 Nov); "
@@ -330,23 +332,39 @@ DATE_CHECK = ("DATE CHECK  •  Wires read up to 23:00 UTC, Wed 25 Nov 2026. "
 
 FOOTER = ("Sources: Reuters, AP, BBC, Xinhua, NYT, WSJ, HRW, ABC, "
     "The Diplomat, AFC, AFAR, Straits Times, Anadolu, ET EnergyWorld, "
-    "EU Council, AfricaSoccer, OzArab Media, UEFA, OilPrice, Kilambi, "
+    "EU Council, AfricaSoccer, France 24, Bloomberg Línea, UEFA, OilPrice, "
     "Inside Climate News. Every drawing original.")
 
 
 # ---- flat-vector art scenes (each draws inside box x,y,w,h) ----
 def art_tariffs(d, x, y, w, h):
+    # Port + tariff-rate containers: reads instantly at 300px.
     d.rectangle([x, y, x + w, y + h], fill=(233, 196, 106))
-    d.rectangle([x, y + h - 12, x + w, y + h], fill=BROWN)
-    for i, c in enumerate([(228, 87, 46), (42, 127, 111), (27, 42, 74)]):
-        bx = x + 12 + i * 62
-        d.rectangle([bx, y + h - 52, bx + 56, y + h - 12], fill=c,
+    d.rectangle([x, y + h - 8, x + w, y + h], fill=BROWN)
+    # big % stamp, top left
+    d.ellipse([x + 8, y + 2, x + 40, y + 34], fill=NAVY)
+    d.text((x + 14, y + 8), "%", font=font(20, bold=True), fill=MUSTARD)
+    # rate-labelled containers along the quay
+    rates = [("20%", CORAL), ("15%", TEAL), ("35%", NAVY)]
+    for i, (lab, col) in enumerate(rates):
+        bx = x + 48 + i * 62
+        by = y + h - 32
+        d.rectangle([bx, by, bx + 56, by + 24], fill=col,
                     outline=WHITE, width=2)
-        for k in range(3):
-            d.line([bx + 8, y + h - 42 + k * 10, bx + 48, y + h - 42 + k * 10],
-                   fill=WHITE, width=2)
-    d.ellipse([x + w - 62, y + 8, x + w - 8, y + 62], fill=NAVY)
-    d.text((x + w - 48, y + 16), "%", font=font(28, bold=True), fill=MUSTARD)
+        for k in (4, 20):
+            d.line([bx + 6, by + k, bx + 50, by + k], fill=WHITE,
+                   width=1)
+        fnt = font(11, bold=True)
+        d.text((bx + 28 - d.textlength(lab, font=fnt) / 2, by + 6), lab,
+               font=fnt, fill=WHITE)
+    # gantry crane, right: mast, jib, cable, hanging container
+    d.rectangle([x + w - 52, y + 4, x + w - 46, y + h - 8], fill=NAVY)
+    d.rectangle([x + w - 108, y + 4, x + w - 40, y + 10], fill=NAVY)
+    d.line([x + w - 84, y + 10, x + w - 84, y + h - 30], fill=NAVY, width=2)
+    d.rectangle([x + w - 102, y + h - 30, x + w - 66, y + h - 8],
+                fill=CORAL, outline=WHITE, width=2)
+    d.text((x + w - 96, y + h - 26), "20%", font=font(9, bold=True),
+           fill=WHITE)
 
 
 def art_chart(d, x, y, w, h):
