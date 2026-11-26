@@ -5,6 +5,7 @@ Code-drawn flat 2D vector front page (PIL). Run: python3 draw.py -> entry.png
 All story text is written here in its exact render case (no case transforms).
 Region and field bars are computed from STORIES, never hand-counted.
 """
+import math
 import os
 from collections import Counter
 from PIL import Image, ImageDraw, ImageFont
@@ -120,8 +121,8 @@ STORIES = [
     dict(num=1, region="N. AMERICA", field="Trade",
          kicker="01  •  WASHINGTON  •  TRADE",
          headline="US proposes tariffs of up to 20% on EU, China and 12 more",
-         deck="China: 20% new (total ~45%); Vietnam 35% ceiling, 20% with a "
-              "deal; EU, Japan, Korea, Taiwan 15%.",
+         deck="China: 20% new (total ~45%). Vietnam: 35% ceiling, or 20% with a "
+              "deal. EU, Japan, Korea, Taiwan: 15%.",
          why="Two top US trade partners face duties.",
          source="REUTERS  •  AP", ver="O", art="tariffs"),
     dict(num=2, region="EAST & SE ASIA", field="Markets",
@@ -453,16 +454,20 @@ def art_rocket(d, x, y, w, h):
 
 def art_island(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=SKY)
-    d.polygon([(x + 6, y + h), (x + int(w * 0.25), y + int(h * 0.45)),
-               (x + w // 2, y + int(h * 0.35)),
-               (x + int(w * 0.75), y + int(h * 0.45)), (x + w - 6, y + h)],
+    # v9: TWO flags on the hilltop (a pact, not one flag) + gold coin;
+    # hill lowered so the flags have sky above them and read at 300px.
+    d.polygon([(x + 6, y + h), (x + int(w * 0.25), y + int(h * 0.62)),
+               (x + w // 2, y + int(h * 0.52)),
+               (x + int(w * 0.75), y + int(h * 0.62)), (x + w - 6, y + h)],
               fill=TEAL)
-    d.polygon([(x + w // 2 - 3, y + int(h * 0.15)),
-               (x + w // 2 + 3, y + int(h * 0.15)),
-               (x + w // 2, y + int(h * 0.45))], fill=LAND)
-    d.polygon([(x + w // 2, y + int(h * 0.18)),
-               (x + w // 2 + 18, y + int(h * 0.28)),
-               (x + w // 2, y + int(h * 0.36))], fill=MUSTARD)
+    # flagpoles + flags: mustard (Solomons) left, navy + star (Australia)
+    for px, col in [(x + w // 2 - 22, MUSTARD), (x + w // 2 + 4, NAVY)]:
+        d.line([px, y + 2, px, y + int(h * 0.55)], fill=NAVY, width=2)
+        d.rectangle([px, y + 2, px + 18, y + 11], fill=col, outline=WHITE,
+                    width=1)
+    # white star on each flag
+    for sx in (x + w // 2 - 13, x + w // 2 + 13):
+        d.ellipse([sx - 2, y + 4, sx + 2, y + 8], fill=WHITE)
     # v8: gold coin for the A$740m + birds in the sky
     d.ellipse([x + w - 30, y + 3, x + w - 12, y + 21], fill=MUSTARD,
               outline=NAVY, width=1)
@@ -473,17 +478,24 @@ def art_island(d, x, y, w, h):
 
 def art_strikes(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=NAVY)
-    # v8: smoke puffs + a lightning bolt over the blasts
-    for sx, sy, r in [(x + 26, y + 5, 5), (x + w - 30, y + 7, 4)]:
-        d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(150, 150, 150))
-    d.polygon([(x + w - 16, y + 3), (x + w - 9, y + 3), (x + w - 14, y + 13),
-               (x + w - 10, y + 13), (x + w - 18, y + 25),
-               (x + w - 14, y + 25), (x + w - 11, y + 15),
-               (x + w - 15, y + 15)], fill=MUSTARD)
-    for cx, cy, r in [(x + w // 4, y + h // 3, 9),
-                      (x + w // 2, y + h // 2, 12),
-                      (x + 3 * w // 4, y + h // 3, 8)]:
-        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CORAL)
+    # v9: starburst blasts + brighter smoke + a heavier lightning bolt,
+    # so the strike reads at 300px; KYIV stays clear at bottom left.
+    for sx, sy, r in [(x + 26, y + 6, 5), (x + w - 30, y + 7, 5)]:
+        d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(205, 205, 205))
+    # lightning bolt, right - wider and taller than v8
+    d.polygon([(x + w - 18, y + 2), (x + w - 8, y + 2), (x + w - 14, y + 12),
+               (x + w - 9, y + 12), (x + w - 19, y + 26),
+               (x + w - 14, y + 26), (x + w - 11, y + 15),
+               (x + w - 16, y + 15)], fill=MUSTARD)
+    for cx, cy, r in [(x + w // 4, y + h // 3 + 2, 10),
+                      (x + w // 2, y + h // 2 + 1, 13),
+                      (x + 3 * w // 4, y + h // 3 + 2, 9)]:
+        pts = []
+        for i in range(16):
+            ang = math.pi * i / 8
+            rr = r if i % 2 == 0 else r * 0.55
+            pts.append((cx + rr * math.cos(ang), cy + rr * math.sin(ang)))
+        d.polygon(pts, fill=CORAL)
         d.ellipse([cx - r // 2, cy - r // 2, cx + r // 2, cy + r // 2],
                   fill=MUSTARD)
     d.rectangle([x, y + h - 8, x + w, y + h], fill=(20, 30, 55))
@@ -562,17 +574,38 @@ def art_mine(d, x, y, w, h):
 
 def art_gaza(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=(120, 120, 120))
-    # v8: smoke rising over the buildings
-    for sx, sy, r in [(x + 20, y + 6, 4), (x + 44, y + 4, 5),
-                      (x + 66, y + 7, 4)]:
-        d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(90, 90, 90))
+    # v9: the strike reads - spiked blasts over the rooftops + smoke
+    # drifting in the open sky right of the buildings (v8 puffs were
+    # hidden behind the buildings / clipped at the box top).
     for i, bh in enumerate([20, 30, 24]):
         bx = x + 10 + i * 22
         d.rectangle([bx, y + h - 6 - bh, bx + 18, y + h - 6], fill=NAVY2)
         d.rectangle([bx + 5, y + h - 6 - bh + 5, bx + 13,
                      y + h - 6 - bh + 11], fill=MUSTARD)
-    d.ellipse([x + w - 26, y + 4, x + w - 6, y + 24], fill=CORAL)
-    d.ellipse([x + w - 21, y + 9, x + w - 11, y + 19], fill=MUSTARD)
+    # smoke as one overlapping cloud, not three separate dots (v9 rev:
+    # separate dots read as pebbles in the grey sky)
+    for sx, sy, r in [(x + 116, y + 9, 6), (x + 126, y + 6, 6),
+                      (x + 137, y + 9, 5)]:
+        d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(70, 70, 70))
+    # starburst blast, right, bursting over the rooftops
+    cx, cy, r = x + w - 18, y + 14, 11
+    pts = []
+    for i in range(16):
+        ang = math.pi * i / 8
+        rr = r if i % 2 == 0 else r * 0.55
+        pts.append((cx + rr * math.cos(ang), cy + rr * math.sin(ang)))
+    d.polygon(pts, fill=CORAL)
+    d.ellipse([cx - 5, cy - 5, cx + 5, cy + 5], fill=MUSTARD)
+    # second smaller burst, centred on the third building's roof
+    # (v9 rev: was straddling the building's edge and read as a blob)
+    cx2, cy2, r2 = x + 63, y + 11, 7
+    pts2 = []
+    for i in range(16):
+        ang = math.pi * i / 8
+        rr = r2 if i % 2 == 0 else r2 * 0.55
+        pts2.append((cx2 + rr * math.cos(ang), cy2 + rr * math.sin(ang)))
+    d.polygon(pts2, fill=(255, 140, 0))
+    d.ellipse([cx2 - 3, cy2 - 3, cx2 + 3, cy2 + 3], fill=MUSTARD)
 
 
 def art_scales(d, x, y, w, h):
@@ -614,12 +647,27 @@ def art_court(d, x, y, w, h):
 
 def art_tanker(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=(40, 40, 40))
-    # v8: second flame tongue beside the main fire
-    d.ellipse([x + w - 52, y + 8, x + w - 34, y + 26], fill=(255, 140, 0))
-    d.ellipse([x + w - 48, y + 12, x + w - 38, y + 22], fill=MUSTARD)
-    d.ellipse([x + w - 34, y + 2, x + w - 10, y + 26], fill=CORAL)
-    d.ellipse([x + w - 28, y + 8, x + w - 16, y + 20], fill=MUSTARD)
+    # v9: the fire reads - two tall flame tongues over the cab/tank +
+    # smoke drifting left (v8 flames were one flat blob at the edge).
+    for sx, sy, r in [(x + w - 78, y + 6, 5), (x + w - 62, y + 5, 4)]:
+        d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(95, 95, 95))
+    # main flame: wide orange tongues ABOVE the cab roofline (v9 rev:
+    # coral flames vanished against the coral cab - orange + mustard
+    # core now contrasts, and the flame is wider than the cab).
+    fx = x + w - 22
+    d.polygon([(fx - 16, y + h - 10), (fx - 12, y + 6), (fx - 7, y + 1),
+               (fx - 2, y + 6), (fx + 3, y + 1), (fx + 8, y + 6),
+               (fx + 14, y + 2), (fx + 16, y + h - 10)],
+              fill=(255, 140, 0))
+    d.polygon([(fx - 9, y + h - 10), (fx - 5, y + 8), (fx - 1, y + 3),
+               (fx + 4, y + 8), (fx + 9, y + h - 10)], fill=MUSTARD)
+    # second tongue, left of the main flame, over the tank
+    fx2 = x + w - 48
+    d.polygon([(fx2 - 8, y + h - 10), (fx2 - 5, y + 8), (fx2, y + 2),
+               (fx2 + 5, y + 8), (fx2 + 8, y + h - 10)], fill=(255, 140, 0))
+    d.ellipse([fx2 - 3, y + h - 18, fx2 + 3, y + h - 10], fill=MUSTARD)
     d.rectangle([x + 8, y + h - 22, x + w - 36, y + h - 10], fill=(200, 200, 200))
+    d.rectangle([x + 8, y + h - 16, x + w - 36, y + h - 13], fill=RED)
     d.rectangle([x + w - 34, y + h - 20, x + w - 10, y + h - 10], fill=CORAL)
     for wx in (x + 16, x + w - 44, x + w - 20):
         d.ellipse([wx - 4, y + h - 10, wx + 4, y + h - 2], fill=INK)
@@ -742,6 +790,12 @@ CONTINENTS = [
     # Solomon Islands (v7: pin 7 sits on this blob, NE of Australia)
     [(153, -6), (156, -4), (160, -5), (164, -7), (165, -10), (162, -13),
      (157, -13), (153, -10)],
+    # Java strip, thickened (v9): the v8 strip read as a sliver at 300px
+    # and pin 9 looked attached to New Guinea; this bar makes Java read
+    # as its own long island under the pin.
+    [(104, -5.0), (108, -5.5), (112, -6.0), (116, -6.5),
+     (120, -7.0), (122, -7.5), (122, -10.5), (118, -10.0),
+     (114, -9.5), (110, -9.0), (106, -8.5), (104, -8.0)],
     [(114, -22), (114, -30), (115, -34), (118, -35), (124, -33),
      (129, -32), (132, -32), (135, -35), (138, -35), (140, -38),
      (145, -38), (150, -37), (153, -32), (153, -27), (150, -23),
@@ -760,14 +814,17 @@ PINS = [
     (1, -77.0, 39.0, 0, 0),      # Washington
     (2, 127.0, 37.5, -8, -2),    # Seoul: nudged onto mainland China (v7)
     (3, 98.5, 39.8, 0, 0),       # Jiuquan
-    (4, 30.5, 50.4, 0, 0),       # Kyiv
+    (4, 30.5, 50.4, 0, 4),       # Kyiv: nudged down 4 (v9, was on the
+                                 # map's top land edge)
     (5, 50.1, 26.6, 8, 0),       # Ras Tanura
-    (6, -0.1, 51.5, 5, 1),       # London: nudged onto mainland Europe (v7)
+    (6, -0.1, 51.5, 5, 5),       # London: nudged onto mainland Europe (v7),
+                                 # down 4 more (v9, was on the top edge)
     (7, 159.0, -8.5, 0, 0),      # Solomon Islands (v7: was Canberra, pin sat
                                  # in the sea SE of Australia; story is the
                                  # Solomons pact, pinned on the Solomons blob)
     (8, 90.4, 23.8, 0, 0),       # Dhaka
-    (9, 106.8, -6.6, 0, -7),     # Bogor: nudged to mid-Java strip (v7)
+    (9, 106.8, -6.6, 0, -4),     # Bogor: nudged to mid-Java strip (v7);
+                                 # v9: dy -7 -> -4, sits mid thickened strip
     (10, 34.5, 31.5, -18, 20),   # Gaza City
     (11, 18.4, -33.9, 4, -6),    # Cape Town: nudged inland off the tip (v7)
     (12, 35.2, 31.8, 12, -12),   # Jerusalem
@@ -795,6 +852,9 @@ def draw_map(d, x, y, w, h):
         if dx or dy:
             d.line([tx, ty, cx, cy], fill=NAVY, width=1)
             d.ellipse([tx - 2, ty - 2, tx + 2, ty + 2], fill=NAVY)
+        if num == 9:
+            # v9: white halo so pin 9 pops off the Java strip at 300px
+            d.ellipse([cx - 10, cy - 10, cx + 10, cy + 10], fill=WHITE)
         d.ellipse([cx - PIN_R, cy - PIN_R, cx + PIN_R, cy + PIN_R],
                   fill=REGION_COLORS[story["region"]], outline=WHITE,
                   width=2)
