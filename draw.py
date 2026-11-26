@@ -1,10 +1,12 @@
 #!/usr/bin/env python3
-"""news-image-20261125: draw the one-page front page for Wed 25 Nov 2026.
+"""news-image-20261125 v5: COPY-#1 format - 50 stories, 10 regions, 21 fields.
 
 Code-drawn flat 2D vector front page (PIL). Run: python3 draw.py -> entry.png
 All story text is written here in its exact render case (no case transforms).
+Region and field bars are computed from STORIES, never hand-counted.
 """
 import os
+from collections import Counter
 from PIL import Image, ImageDraw, ImageFont
 
 W, H = 1024, 1024
@@ -14,7 +16,6 @@ OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "entry.png")
 NAVY = (27, 42, 74)
 NAVY2 = (35, 56, 99)
 CREAM = (251, 243, 228)
-CREAM2 = (245, 234, 210)
 INK = (28, 28, 28)
 MUSTARD = (232, 163, 23)
 CORAL = (228, 87, 46)
@@ -22,15 +23,15 @@ TEAL = (42, 127, 111)
 SKY = (191, 217, 232)
 SEA = (168, 205, 226)
 LAND = (107, 124, 63)
-LAND2 = (125, 143, 78)
 WHITE = (255, 255, 255)
 GREY = (90, 90, 90)
-LIGHTGREY = (220, 214, 200)
 RED = (178, 34, 34)
 GREEN = (46, 125, 50)
 BLUE = (30, 90, 160)
 AMBER = (176, 124, 0)
 PURPLE = (106, 76, 147)
+PINK = (200, 60, 120)
+BROWN = (120, 72, 20)
 
 FONTDIR = "/usr/share/fonts/truetype/dejavu/"
 
@@ -70,7 +71,8 @@ def text_block(d, x, y, text, fnt, color, max_w, leading=None, align="left"):
     return y
 
 
-def fit_size(d, text, max_w, start, minimum, bold=False, serif=False, max_lines=2):
+def fit_size(d, text, max_w, start, minimum, bold=False, serif=False,
+             max_lines=2):
     """Largest font size >= minimum whose wrap fits in max_lines lines."""
     size = start
     while size > minimum:
@@ -81,143 +83,261 @@ def fit_size(d, text, max_w, start, minimum, bold=False, serif=False, max_lines=
     return font(minimum, bold=bold, serif=serif)
 
 
-CHIP_COLORS = {"CONFIRMED": GREEN, "OFFICIALS": BLUE, "REPORTED": AMBER,
-               "FORECAST": PURPLE}
+# ---- regions (10) and fields (21) in display order ----
+REGION_ORDER = ["N. AMERICA", "LATIN AMERICA", "EUROPE", "MIDDLE EAST",
+                "N. AFRICA", "SUB-SAHARAN AFRICA", "SOUTH ASIA",
+                "EAST & SE ASIA", "OCEANIA", "GLOBAL"]
+REGION_COLORS = {"N. AMERICA": NAVY, "LATIN AMERICA": TEAL,
+                 "EUROPE": BLUE, "MIDDLE EAST": RED,
+                 "N. AFRICA": MUSTARD, "SUB-SAHARAN AFRICA": PURPLE,
+                 "SOUTH ASIA": CORAL, "EAST & SE ASIA": GREEN,
+                 "OCEANIA": PINK, "GLOBAL": GREY}
+REGION_TEXT = {"N. AFRICA": INK}  # dark text on the mustard chip only
+
+FIELD_ORDER = ["War", "Disaster", "Justice", "Security", "Diplomacy", "Tech",
+               "Crime", "Economy", "Labour", "Markets", "Rights", "Sport",
+               "Trade", "Business", "Climate", "Energy", "Environment",
+               "Humanitarian", "Politics", "Culture", "Space"]
+
+VER_COLORS = {"OFFICIAL": GREEN, "REPORTED": AMBER, "CLAIM": RED}
+VER_LABELS = {"O": "OFFICIAL", "R": "REPORTED", "CL": "CLAIM"}
 
 
-def chip(d, x, y, label):
+def ver_chip(d, x, y, label):
     fnt = font(8, bold=True)
     w = int(d.textlength(label, font=fnt)) + 10
     d.rounded_rectangle([x, y, x + w, y + 13], radius=6,
-                        fill=CHIP_COLORS[label])
+                        fill=VER_COLORS[label])
     d.text((x + 5, y + 2), label, font=fnt, fill=WHITE)
     return w
 
 
-# ---- story data (all verified 25 Nov 2026 in at least one time zone) ----
-HEROES = [
-    dict(num=1, kicker="01  •  WASHINGTON  •  TRADE",
-         headline="US UNVEILS SECTION 301 TARIFFS ON 14 ECONOMIES",
-         deck="China: 20% new on top of ~25% (total ~45%); Vietnam 20%; EU, Japan, Korea, Taiwan capped 15%.",
-         source="REUTERS  •  AP", chip="CONFIRMED", art="tariffs"),
-    dict(num=2, kicker="02  •  JIUQUAN  •  SPACE",
-         headline="SHENZHOU-24 LIFTS OFF WITH PAKISTAN'S FIRST ASTRONAUT",
-         deck="Muhammad Zeeshan Ali, 40, joins Tang Hongbo and Wu Yi aboard Tiangong station.",
-         source="AP  •  XINHUA", chip="CONFIRMED", art="rocket"),
-    dict(num=3, kicker="03  •  TEHRAN  •  MIDDLE EAST",
-         headline="IRAN: NO TALKS UNTIL US MEETS SEVEN CONDITIONS",
-         deck="Parliament speaker Ghalibaf sets terms as Qatar mediates; tanker war at sea widens.",
-         source="WORLDWATCH  •  ET ENERGYWORLD", chip="OFFICIALS", art="tehran"),
-]
-
-SMALLS = [
-    dict(num=4, kicker="04  •  SEOUL  •  MARKETS",
-         headline="ASIAN STOCKS TUMBLE AS AI FADES",
-         deck="KOSPI plunges 5.3%, Nikkei falls 2.9% as the tech rally fizzles.",
-         source="REUTERS", chip="CONFIRMED", art="stocks"),
-    dict(num=5, kicker="05  •  HONIARA  •  SECURITY",
-         headline="SOLOMONS NAME AUSTRALIA PARTNER",
+# ---- story data: all verified 25 Nov 2026 (first reported Wed 25 Nov) ----
+# keys: num, region, field, kicker, headline, deck, source, ver (O/R/CL),
+#       stat (small panels), why (heroes), art (panels)
+STORIES = [
+    # --- 3 heroes ---
+    dict(num=1, region="N. AMERICA", field="Trade",
+         kicker="01  •  WASHINGTON  •  TRADE",
+         headline="US proposes tariffs of up to 20% on EU, China and 12 more",
+         deck="China: 20% new (total ~45%); Vietnam up to 35%, 20% with a deal; "
+              "EU, Japan, Korea, Taiwan 15%.",
+         why="Two top US trade partners face duties.",
+         source="REUTERS  •  AP", ver="O", art="tariffs"),
+    dict(num=2, region="EAST & SE ASIA", field="Markets",
+         kicker="02  •  SEOUL  •  TOKYO  •  TAIPEI  •  MARKETS",
+         headline="AI doubts sink Asian chip stocks: Kospi closes −6.2%",
+         deck="Kospi 4,697.51; SK hynix −11.1%, Samsung −9.9%; "
+              "Taiex −4.8%, Nikkei −2.8%.",
+         why="Investors doubt the AI boom pays off.",
+         source="WSJ  •  AP", ver="R", art="chart"),
+    dict(num=3, region="EAST & SE ASIA", field="Space",
+         kicker="03  •  JIUQUAN, CHINA  •  SPACE",
+         headline="Pakistan's first astronaut docks at China's space station",
+         deck="Muhammad Zeeshan Ali, 40, first foreigner on Tiangong, flew on "
+              "Shenzhou-24; stays 5 to 10 days.",
+         why="Tiangong takes its first foreign astronaut.",
+         source="AP  •  XINHUA", ver="O", art="rocket"),
+    # --- 10 small panels ---
+    dict(num=4, region="EUROPE", field="War",
+         kicker="04  •  KYIV  •  WAR",
+         headline="Russian strikes kill 5, cut power in 5 regions",
+         deck="Five regions lose power; Zaporizhzhia plant on diesel.",
+         stat="5 REGIONS", art="strikes"),
+    dict(num=5, region="MIDDLE EAST", field="War",
+         kicker="05  •  RAS TANURA  •  WAR",
+         headline="Saudis down Houthi drones",
+         deck="Four down over Ras Tanura after Hodeidah strike.",
+         stat="4 DRONES", art="drone"),
+    dict(num=6, region="EUROPE", field="Energy",
+         kicker="06  •  LONDON  •  ENERGY",
+         headline="UK energy price cap to rise 26% in January",
+         deck="Typical bill £1,723 to £2,166 from 1 January, Ofgem says.",
+         stat="£2,166", art="energy"),
+    dict(num=7, region="OCEANIA", field="Diplomacy",
+         kicker="07  •  CANBERRA  •  DIPLOMACY",
+         headline="Solomons signs security pact with Australia",
          deck="New pact names Canberra first; the treaty excludes China.",
-         source="AP", chip="CONFIRMED", art="island"),
-    dict(num=6, kicker="06  •  ADEN  •  YEMEN",
-         headline="HOUTHIS CLOSE IN ON ADEN",
-         deck="Houthis 60 km out; forces dig in, coalition hits Hodeidah port.",
-         source="REUTERS  •  AL JAZEERA", chip="OFFICIALS", art="aden"),
-    dict(num=7, kicker="07  •  TAIPEI  •  TECH",
-         headline="HUANG APOLOGISES, IS IN THERAPY",
-         deck="Nvidia chief admits 'terrible mistakes'; denies Trump role.",
-         source="NYT  •  REUTERS", chip="CONFIRMED", art="chip"),
-    dict(num=8, kicker="08  •  MIDDLETOWN  •  USA",
-         headline="ARMY BLASTS 9,500 LB IN IOWA",
-         deck="68 drums destroyed at 09:00 CST; EPA finds zero airborne lead.",
-         source="AP  •  US ARMY", chip="CONFIRMED", art="blast"),
-    dict(num=9, kicker="09  •  SAN JUAN  •  CULTURE",
-         headline="75TH MISS UNIVERSE CROWNED",
-         deck="Jennifer Barreto of Puerto Rico wins; first mother to win.",
-         source="USA TODAY  •  AP", chip="CONFIRMED", art="crown"),
-    dict(num=10, kicker="10  •  SUVA  •  CLIMATE",
-         headline="FIJI DECLARES DROUGHT DISASTER",
-         deck="Prolonged drought scorches forests and farmland.",
-         source="THE DIPLOMAT", chip="CONFIRMED", art="drought"),
-    dict(num=11, kicker="11  •  QUEENSLAND  •  CLIMATE",
-         headline="BARRIER REEF BLEACHING ALERT",
-         deck="Scientists warn of unprecedented ocean heat as El Nino builds.",
-         source="ABC AUSTRALIA", chip="FORECAST", art="reef"),
-    dict(num=12, kicker="12  •  SAN FRANCISCO  •  WEATHER",
-         headline="SAN FRANCISCO BRACES FOR FLOODS",
-         deck="King tides and El Nino surf threaten the bay and the coast.",
-         source="INSIDE CLIMATE NEWS", chip="FORECAST", art="waves"),
-    dict(num=13, kicker="13  •  HONG KONG  •  RIGHTS",
-         headline="WARNING AHEAD OF FIRE ANNIVERSARY",
-         deck="HRW urges free expression ahead of Tai Po anniversary.",
-         source="HRW", chip="OFFICIALS", art="hongkong"),
+         stat="CANBERRA FIRST", art="island"),
+    dict(num=8, region="SOUTH ASIA", field="Labour",
+         kicker="08  •  DHAKA  •  LABOUR",
+         headline="Garment workers offered higher minimum wage",
+         deck="Board lifts the minimum 36%, to 17,500 taka a month.",
+         stat="17,500 TAKA", art="wage"),
+    dict(num=9, region="EAST & SE ASIA", field="Disaster",
+         kicker="09  •  BOGOR  •  DISASTER",
+         headline="9 dead, 17 still trapped in flooded gold mine",
+         deck="Rain floods an illegal 100-metre shaft; 11 miners escape.",
+         stat="9 DEAD", art="mine"),
+    dict(num=10, region="MIDDLE EAST", field="War",
+         kicker="10  •  GAZA CITY  •  WAR",
+         headline="Israeli strike kills Hamas security chief",
+         deck="Mohammad Abuelouf dies with his wife and two daughters.",
+         stat="2ND IN 24H", art="gaza"),
+    dict(num=11, region="SUB-SAHARAN AFRICA", field="Justice",
+         kicker="11  •  CAPE TOWN  •  JUSTICE",
+         headline="Court lifts 'Farmgate' charges",
+         deck="High Court voids report; Ramaphosa impeachment ends.",
+         stat="RULING", art="scales"),
+    dict(num=12, region="MIDDLE EAST", field="Justice",
+         kicker="12  •  JERUSALEM  •  JUSTICE",
+         headline="Judges urge rethink of Netanyahu graft charges",
+         deck="Judges say drop Case 4000; rethink Case 2000.",
+         stat="3 CASES", art="court"),
+    dict(num=13, region="N. AFRICA", field="Disaster",
+         kicker="13  •  GIZA  •  DISASTER",
+         headline="Fuel tanker fire kills at least 30 near Cairo",
+         deck="Tanker overturns on the Ring Road; fire engulfs cars.",
+         stat="30 DEAD", art="tanker"),
+    # --- ALSO ON 14-50: one line each, source + veracity letter ---
+    dict(num=14, region="SUB-SAHARAN AFRICA", field="Diplomacy",
+         text="Ethiopia offers to host inclusive Sudan peace talks.",
+         source="Anadolu", ver="R"),
+    dict(num=15, region="N. AMERICA", field="Rights",
+         text="Abrego Garcia to leave the US voluntarily for Spain.",
+         source="AP", ver="R"),
+    dict(num=16, region="GLOBAL", field="Tech",
+         text="Guterres calls for AI guardrails at Security Council.",
+         source="Xinhua", ver="O"),
+    dict(num=17, region="EUROPE", field="Politics",
+         text="Most Germans oppose military aid to Ukraine, poll finds.",
+         source="Reuters", ver="R"),
+    dict(num=18, region="MIDDLE EAST", field="Politics",
+         text="Eisenkot clinches first coalition pact in Israel.",
+         source="Reuters", ver="R"),
+    dict(num=19, region="MIDDLE EAST", field="Diplomacy",
+         text="Huckabee 'not certain' $3.8bn Israel aid ends this year.",
+         source="Reuters", ver="R"),
+    dict(num=20, region="N. AMERICA", field="Crime",
+         text="Fort Hood shooter Hasan seeks stay ahead of execution.",
+         source="Reuters", ver="R"),
+    dict(num=21, region="SUB-SAHARAN AFRICA", field="Sport",
+         text="Senegal reinstated as AFCON champions by CAS.",
+         source="Straits Times", ver="O"),
+    dict(num=22, region="EAST & SE ASIA", field="Security",
+         text="Russian warplanes trigger alarm among US partners in Asia.",
+         source="WSJ", ver="R"),
+    dict(num=23, region="EAST & SE ASIA", field="Sport",
+         text="Kashiwa beat Newcastle in the AFC Champions League Elite.",
+         source="AFC", ver="O"),
+    dict(num=24, region="EUROPE", field="Diplomacy",
+         text="EU leaders meet Western Balkan counterparts.",
+         source="EU Council", ver="O"),
+    dict(num=25, region="N. AMERICA", field="Culture",
+         text="Balloons for Macy's 100th Thanksgiving parade inflate.",
+         source="AFAR", ver="R"),
+    dict(num=26, region="N. AMERICA", field="Tech",
+         text="Lawmakers attack Huang's reinstatement; hearings Dec 1–3.",
+         source="WSJ", ver="R"),
+    dict(num=27, region="EUROPE", field="Sport",
+         text="Liverpool win 3–0 at Brugge; Lille stun Bayern 2–1.",
+         source="UEFA", ver="O"),
+    dict(num=28, region="MIDDLE EAST", field="Security",
+         text="A fourth tanker hits a mine in the Strait of Hormuz.",
+         source="ET EnergyWorld", ver="R"),
+    dict(num=29, region="MIDDLE EAST", field="Economy",
+         text="Brent jumps 2.4% to $93.60 after Ras Tanura claim.",
+         source="OilPrice", ver="R"),
+    dict(num=30, region="SUB-SAHARAN AFRICA", field="Sport",
+         text="Senegal face Tajikistan at the Under-17 World Cup.",
+         source="AfricaSoccer", ver="O"),
+    dict(num=31, region="SUB-SAHARAN AFRICA", field="Sport",
+         text="Bouaddi is Morocco's youngest UCL scorer.",
+         source="AfricaSoccer", ver="O"),
+    dict(num=32, region="N. AMERICA", field="Business",
+         text="US attorney general sidesteps Nvidia probe questions.",
+         source="OzArab Media", ver="R"),
+    dict(num=33, region="N. AMERICA", field="Diplomacy",
+         text="Canada's Anita Anand talks to the BBC on a new world order.",
+         source="BBC", ver="R"),
+    dict(num=34, region="SUB-SAHARAN AFRICA", field="Culture",
+         text="Pete Edochie dies Wed 25 Nov, aged 79, after cancer battle.",
+         source="BBC", ver="R"),
+    dict(num=35, region="MIDDLE EAST", field="Diplomacy",
+         text="Iran sets seven conditions before any talks with US.",
+         source="ET EnergyWorld", ver="O"),
+    dict(num=36, region="MIDDLE EAST", field="War",
+         text="Houthis 60 km from Aden; coalition hits Hodeidah port.",
+         source="Reuters", ver="R"),
+    dict(num=37, region="N. AMERICA", field="Tech",
+         text="Huang apologises, is in therapy; denies Trump role.",
+         source="NYT", ver="R"),
+    dict(num=38, region="N. AMERICA", field="Disaster",
+         text="Iowa blast destroys 9,500 lb; EPA finds zero airborne lead.",
+         source="AP", ver="O"),
+    dict(num=39, region="OCEANIA", field="Disaster",
+         text="Fiji declares drought disaster as forests scorch.",
+         source="The Diplomat", ver="O"),
+    dict(num=40, region="OCEANIA", field="Environment",
+         text="Scientists warn of unprecedented ocean heat at Barrier Reef.",
+         source="ABC", ver="R"),
+    dict(num=41, region="N. AMERICA", field="Climate",
+         text="San Francisco braces for floods; king tides threaten bay.",
+         source="Inside Climate News", ver="R"),
+    dict(num=42, region="EAST & SE ASIA", field="Rights",
+         text="HRW urges free expression ahead of Tai Po anniversary.",
+         source="HRW", ver="O"),
+    dict(num=43, region="LATIN AMERICA", field="Trade",
+         text="US proposes 10% duty on Brazilian aircraft, hits Embraer.",
+         source="Reuters", ver="R"),
+    dict(num=44, region="SOUTH ASIA", field="Markets",
+         text="India's Nifty jumps 1.85%, the only Asian riser.",
+         source="Reuters", ver="R"),
+    dict(num=45, region="N. AMERICA", field="Markets",
+         text="Nvidia falls 5.9% in New York; Micron drops 11%.",
+         source="WSJ", ver="R"),
+    dict(num=46, region="EAST & SE ASIA", field="Markets",
+         text="Shanghai falls 2.0% and Hong Kong 1.1% as tariffs loom.",
+         source="Reuters", ver="R"),
+    dict(num=47, region="MIDDLE EAST", field="Security",
+         text="Houthi projectile hits Jazan port; minor damage, no injuries.",
+         source="Reuters", ver="R"),
+    dict(num=48, region="SUB-SAHARAN AFRICA", field="Humanitarian",
+         text="RSF drone strikes kill 19 civilians in Sudan's Blue Nile.",
+         source="Reuters", ver="R"),
+    dict(num=49, region="EUROPE", field="Politics",
+         text="Merz: Russia wants more than Ukraine, defends Kyiv aid.",
+         source="Reuters", ver="R"),
+    dict(num=50, region="EUROPE", field="Security",
+         text="Poland to set up no-fly zone along Ukraine border.",
+         source="Kilambi", ver="R"),
 ]
 
-ALSO_ON = [
-    (14, "Ethiopia offers to host inclusive Sudan peace talks; PM Abiy Ahmed invites all sides.", "Anadolu", "Africa"),
-    (15, "Abrego Garcia, symbol of Trump's immigration crackdown, to leave the US voluntarily for Spain.", "AP", "Americas"),
-    (16, "UN chief Guterres calls for AI guardrails at the Security Council as AI outpaces institutions.", "Xinhua", "Global"),
-    (17, "A narrow majority of Germans now oppose military aid to Ukraine, 53% to 46%, a survey finds.", "Reuters", "Europe"),
-    (18, "Eisenkot clinches the first coalition pact in Israel, with Lieberman's Israel Our Home.", "Reuters", "Middle East"),
-    (19, "US envoy Huckabee is 'not certain' the $3.8bn annual military aid to Israel will end this year.", "Reuters", "Middle East"),
-    (20, "Fort Hood shooter Hasan seeks a stay of execution ahead of a possible firing squad.", "Reuters", "Americas"),
-    (21, "Senegal are reinstated as Africa Cup of Nations champions after CAS upholds their appeal.", "Straits Times", "Africa"),
-    (22, "Russian warplanes trigger alarm among US partners in Asia, the WSJ reports.", "WSJ", "Asia-Pacific"),
-    (23, "Kashiwa beat Newcastle in the AFC Champions League Elite.", "AFC", "Asia-Pacific"),
-    (24, "EU leaders meet Western Balkan counterparts at a summit in Brussels.", "EU Council", "Europe"),
-    (25, "Balloons for Macy's 100th Thanksgiving parade inflate in New York on Wednesday.", "AFAR", "Americas"),
-    (26, "Lawmakers in both parties attack Huang's reinstatement; hearings set for Dec 1–3.", "WSJ", "Americas"),
-    (27, "Liverpool visit Club Brugge and Bayern travel to Lille as the Champions League continues.", "BBC", "Europe"),
-    (28, "A fourth oil tanker hits a mine in the Strait of Hormuz and catches fire.", "ET EnergyWorld", "Middle East"),
-    (29, "Oil prices fall as supply glut fears offset Middle East disruption worries; Brent $90.97.", "Reuters", "Global"),
-    (30, "Senegal face Tajikistan with the Group F summit in sight at the Under-17 World Cup.", "AfricaSoccer", "Africa"),
-    (31, "Morocco's Ayyoub Bouaddi becomes his country's youngest Champions League scorer.", "AfricaSoccer", "Africa"),
-    (32, "The US attorney general sidesteps questions on the Nvidia investigation.", "OzArab Media", "Americas"),
-    (33, "Canada's foreign minister Anita Anand talks to the BBC about shaping a new world order.", "BBC", "Americas"),
-    (34, "Veteran Nollywood actor Pete Edochie dies Wed 25 Nov, aged 79, after a prostate cancer battle.", "BBC", "Africa"),
-]
-
-REGIONS = [("AMERICAS", 10), ("ASIA-PACIFIC", 6), ("MIDDLE EAST", 5),
-           ("AFRICA", 5), ("EUROPE", 3), ("OCEANIA", 3), ("GLOBAL", 2)]
+HEROES = STORIES[0:3]
+SMALLS = STORIES[3:13]
+ALSO_ON = STORIES[13:50]
 
 NUMBERS = [
-    ("34", "STORIES"),
-    ("7", "REGIONS"),
-    ("14", "ECONOMIES TARIFFED"),
-    ("5.3%", "KOSPI FALL"),
-    ("60 KM", "HOUTHIS FROM ADEN"),
-    ("9,500 LB", "LEAD AZIDE DESTROYED"),
+    ("20%", "TOP US TARIFF: EU, CHINA + 12 MORE"),
+    ("−6.2%", "KOSPI CLOSE, WORST IN AI SELL-OFF"),
+    ("+26%", "UK ENERGY PRICE CAP FROM 1 JANUARY"),
+    ("30+", "KILLED IN CAIRO TANKER FIRE"),
+    ("9", "DEAD, 17 TRAPPED IN JAVA GOLD PIT"),
 ]
 
-TIMELINE = [
-    ("00:07", "FIJI DISASTER DECLARED"),
-    ("00:18", "SHENZHOU-24 LIFTS OFF"),
-    ("00:52", "AP TARIFFS ANNOUNCED"),
-    ("02:31", "HORMUZ TANKER HIT"),
-    ("04:20", "MISS UNIVERSE CROWNED"),
-    ("15:00", "IOWA BLAST DONE"),
-]
+DATE_CHECK = ("DATE CHECK  •  Wires read up to 23:00 UTC, Wed 25 Nov 2026. "
+    "Every story above happened or was first reported on Wednesday "
+    "25 November 2026. Left out: Huawei guilty verdict (Tue 24 Nov); China "
+    "probes Shanghai party boss Chen Jining (Tue 24 Nov); Houthi drone "
+    "strike on Riyadh tower, 11 hurt (Tue 24 Nov); Ukraine sinks Russian "
+    "corvette Merkury off Libya (struck Sun 22 Nov, confirmed Mon 23 Nov); "
+    "COP31 ends without a deal (Sun 22 Nov); Real Madrid 5–1 PSV "
+    "(Tue 24 Nov); Miss Universe crowned (Tue 24 Nov). Not yet: US "
+    "Thanksgiving (Thu 26 Nov); Sweden PM vote; Section 301 tariffs in "
+    "force (comment + hearing first, may slip to January). OFFICIAL an "
+    "authority's own figure or act • REPORTED press report • CLAIM one "
+    "side's account.")
 
-DATE_CHECK = ("DATE CHECK  •  Wires read up to 19:00 UTC, Wed 25 Nov 2026. "
-    "Every story was reported, or still developing, on 25 Nov in at least one "
-    "time zone. Left out: Huawei guilty verdict (Tue 24 Nov); China probes "
-    "Shanghai party boss Chen Jining (Tue 24 Nov); Houthi drone strike on "
-    "Riyadh tower, 11 hurt (Tue 24 Nov); Ukraine sinks Russian corvette "
-    "Merkury off Libya (struck Sun 22 Nov, confirmed Mon 23 Nov); COP31 ends "
-    "without a deal (Sun 22 Nov); Real Madrid 5–1 PSV (Tue 24 Nov). Not yet: Section 301 tariffs in force "
-    "(comment + hearing first; may slip to January); Sweden PM vote "
-    "(not yet held).")
-
-FOOTER = ("Every story here was reported on Wed 25 Nov 2026 in at least one "
-    "time zone. Sources: AP, BBC, Reuters, Xinhua, NYT, USA Today, WSJ, HRW, "
-    "ABC, The Diplomat, AFC, AFAR, Straits Times, Anadolu, "
-    "ET EnergyWorld, EU Council, AfricaSoccer, OzArab Media. Original drawings.")
+FOOTER = ("Sources: Reuters, AP, BBC, Xinhua, NYT, WSJ, HRW, ABC, "
+    "The Diplomat, AFC, AFAR, Straits Times, Anadolu, ET EnergyWorld, "
+    "EU Council, AfricaSoccer, OzArab Media, UEFA, OilPrice, Kilambi, "
+    "Inside Climate News. Every drawing original.")
 
 
 # ---- flat-vector art scenes (each draws inside box x,y,w,h) ----
 def art_tariffs(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=(233, 196, 106))
-    d.rectangle([x, y + h - 12, x + w, y + h], fill=(120, 72, 20))
+    d.rectangle([x, y + h - 12, x + w, y + h], fill=BROWN)
     for i, c in enumerate([(228, 87, 46), (42, 127, 111), (27, 42, 74)]):
         bx = x + 12 + i * 62
         d.rectangle([bx, y + h - 52, bx + 56, y + h - 12], fill=c,
@@ -229,8 +349,19 @@ def art_tariffs(d, x, y, w, h):
     d.text((x + w - 48, y + 16), "%", font=font(28, bold=True), fill=MUSTARD)
 
 
+def art_chart(d, x, y, w, h):
+    d.rectangle([x, y, x + w, y + h], fill=RED)
+    d.line([(x + 8, y + 10), (x + w // 3, y + 16), (x + 2 * w // 3, y + 30),
+            (x + w - 10, y + h - 8)], fill=WHITE, width=4)
+    for px, py in [(x + 8, y + 10), (x + w // 3, y + 16),
+                   (x + 2 * w // 3, y + 30), (x + w - 10, y + h - 8)]:
+        d.ellipse([px - 4, py - 4, px + 4, py + 4], fill=MUSTARD)
+    d.text((x + 10, y + h - 20), "−6.2%", font=font(15, bold=True),
+           fill=WHITE)
+
+
 def art_rocket(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(27, 42, 74))
+    d.rectangle([x, y, x + w, y + h], fill=NAVY)
     for sx, sy in [(14, 12), (40, 26), (70, 8), (w - 30, 16),
                    (w - 52, 34), (24, 48), (w - 18, 52)]:
         d.ellipse([x + sx - 2, y + sy - 2, x + sx + 2, y + sy + 2], fill=WHITE)
@@ -250,30 +381,8 @@ def art_rocket(d, x, y, w, h):
                 fill=MUSTARD)
     d.polygon([(cx - 4, y + h - 2), (cx + 4, y + h - 2), (cx, y + body1)],
               fill=(255, 200, 60))
-
-
-def art_tehran(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(232, 163, 23))
-    d.rectangle([x, y + h - 30, x + w, y + h], fill=(120, 72, 20))
-    for i in range(5):
-        bx = x + 14 + i * 40
-        bh = 34 + (i % 2) * 14
-        d.rectangle([bx, y + h - 30 - bh, bx + 30, y + h - 30],
-                    fill=NAVY2, outline=WHITE, width=1)
-        d.rectangle([bx + 10, y + h - 30 - bh + 8, bx + 20,
-                     y + h - 30 - bh + 18], fill=MUSTARD)
-    d.ellipse([x + w - 66, y + 6, x + w - 14, y + 58], fill=WHITE)
-    d.text((x + w - 52, y + 14), "7", font=font(30, bold=True), fill=RED)
-
-
-def art_stocks(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(178, 34, 34))
-    d.line([(x + 8, y + 10), (x + w // 3, y + 16), (x + 2 * w // 3, y + 30),
-            (x + w - 10, y + h - 8)], fill=WHITE, width=4)
-    for px, py in [(x + 8, y + 10), (x + w // 3, y + 16),
-                   (x + 2 * w // 3, y + 30), (x + w - 10, y + h - 8)]:
-        d.ellipse([px - 4, py - 4, px + 4, py + 4], fill=MUSTARD)
-    d.text((x + 10, y + h - 18), "-5.3%", font=font(13, bold=True), fill=WHITE)
+    d.text((x + 6, y + h - 13), "00:18 LAUNCH  •  03:56 DOCK",
+           font=font(8, bold=True), fill=MUSTARD)
 
 
 def art_island(d, x, y, w, h):
@@ -281,139 +390,173 @@ def art_island(d, x, y, w, h):
     d.polygon([(x + 6, y + h), (x + int(w * 0.25), y + int(h * 0.45)),
                (x + w // 2, y + int(h * 0.35)),
                (x + int(w * 0.75), y + int(h * 0.45)), (x + w - 6, y + h)],
-              fill=(42, 127, 111))
-    d.polygon([(x + w // 2 - 3, y + int(h * 0.15)), (x + w // 2 + 3, y + int(h * 0.15)),
-               (x + w // 2, y + int(h * 0.45))], fill=(107, 124, 63))
-    d.polygon([(x + w // 2, y + int(h * 0.18)), (x + w // 2 + 18, y + int(h * 0.28)),
+              fill=TEAL)
+    d.polygon([(x + w // 2 - 3, y + int(h * 0.15)),
+               (x + w // 2 + 3, y + int(h * 0.15)),
+               (x + w // 2, y + int(h * 0.45))], fill=LAND)
+    d.polygon([(x + w // 2, y + int(h * 0.18)),
+               (x + w // 2 + 18, y + int(h * 0.28)),
                (x + w // 2, y + int(h * 0.36))], fill=MUSTARD)
 
 
-def art_aden(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(232, 163, 23))
-    d.rectangle([x, y + h - 8, x + w, y + h], fill=(42, 90, 120))
-    d.rectangle([x + w - 82, y + h - 26, x + w - 42, y + h - 14], fill=NAVY)
-    d.rectangle([x + w - 64, y + h - 36, x + w - 58, y + h - 26], fill=NAVY)
-    d.polygon([(x + w - 46, y + 4), (x + w - 16, y + 4), (x + w - 31, y + 24)],
-              fill=RED)
-    d.text((x + 8, y + 4), "60 KM", font=font(11, bold=True), fill=RED)
+def art_strikes(d, x, y, w, h):
+    d.rectangle([x, y, x + w, y + h], fill=NAVY)
+    for cx, cy, r in [(x + w // 4, y + h // 3, 9),
+                      (x + w // 2, y + h // 2, 12),
+                      (x + 3 * w // 4, y + h // 3, 8)]:
+        d.ellipse([cx - r, cy - r, cx + r, cy + r], fill=CORAL)
+        d.ellipse([cx - r // 2, cy - r // 2, cx + r // 2, cy + r // 2],
+                  fill=MUSTARD)
+    d.rectangle([x, y + h - 8, x + w, y + h], fill=(20, 30, 55))
+    d.text((x + 6, y + h - 22), "KYIV", font=font(9, bold=True), fill=WHITE)
 
 
-def art_chip(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(27, 42, 74))
-    cx, cy = x + w // 2, y + h // 2
-    d.rectangle([cx - 22, cy - 18, cx + 22, cy + 18], fill=TEAL,
-                outline=MUSTARD, width=3)
-    for k in range(3):
-        d.line([cx - 34, cy - 10 + k * 10, cx - 22, cy - 10 + k * 10],
-               fill=MUSTARD, width=3)
-        d.line([cx + 22, cy - 10 + k * 10, cx + 34, cy - 10 + k * 10],
-               fill=MUSTARD, width=3)
-    d.text((cx - 9, cy - 9), "AI", font=font(13, bold=True), fill=WHITE)
-
-
-def art_blast(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(245, 234, 210))
-    d.ellipse([x + w // 2 - 26, y + 2, x + w // 2 + 26, y + 34], fill=(120, 72, 20))
-    d.ellipse([x + w // 2 - 16, y + 16, x + w // 2 + 16, y + 44], fill=CORAL)
-    for i in range(4):
-        bx = x + 12 + i * 18
-        d.rectangle([bx, y + h - 16, bx + 14, y + h - 4], fill=NAVY)
-    d.text((x + 8, y + h - 30), "9,500 LB", font=font(10, bold=True), fill=RED)
-
-
-def art_crown(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(228, 87, 46))
-    cx = x + w // 2
-    d.polygon([(cx - 26, y + h - 10), (cx - 26, y + 14), (cx - 10, y + 26),
-               (cx, y + 6), (cx + 10, y + 26), (cx + 26, y + 14),
-               (cx + 26, y + h - 10)], fill=MUSTARD, outline=WHITE)
-    for px in (cx - 26, cx, cx + 26):
-        d.ellipse([px - 3, y + 8, px + 3, y + 14], fill=WHITE)
-
-
-def art_drought(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(233, 196, 106))
-    d.ellipse([x + w - 34, y + 4, x + w - 6, y + 32], fill=(255, 120, 40))
-    d.line([(x + 8, y + h - 8), (x + w // 3, y + h - 20),
-            (x + 2 * w // 3, y + h - 12), (x + w - 8, y + h - 24)],
-           fill=(120, 72, 20), width=2)
-    d.line([(x + w // 2, y + h - 6), (x + w // 2 + 6, y + h - 22)],
-           fill=(120, 72, 20), width=2)
-
-
-def art_reef(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(42, 127, 111))
-    for i, c in enumerate([(255, 255, 255), (232, 163, 23), (255, 255, 255)]):
-        bx = x + 14 + i * 24
-        d.polygon([(bx, y + h - 6), (bx + 6, y + 12), (bx + 12, y + 6),
-                   (bx + 18, y + 18), (bx + 22, y + h - 6)], fill=c)
-    d.ellipse([x + w - 30, y + 6, x + w - 8, y + 28], fill=MUSTARD)
-
-
-def art_waves(d, x, y, w, h):
+def art_drone(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=SKY)
+    cx, cy = x + w // 2, y + h // 2 - 2
+    d.line([cx - 22, cy - 8, cx + 22, cy - 8], fill=NAVY, width=2)
+    d.line([cx - 22, cy + 6, cx + 22, cy + 6], fill=NAVY, width=2)
+    for px, py in [(cx - 24, cy - 8), (cx + 24, cy - 8),
+                   (cx - 24, cy + 6), (cx + 24, cy + 6)]:
+        d.ellipse([px - 5, py - 2, px + 5, py + 2], fill=GREY)
+    d.rectangle([cx - 12, cy - 7, cx + 12, cy + 7], fill=NAVY)
+    d.ellipse([cx - 4, cy - 3, cx + 4, cy + 3], fill=RED)
+    d.line([cx + 16, cy + 10, cx + 30, cy + 14], fill=RED, width=2)
+    d.line([cx + 30, cy + 14, cx + 22, cy + 16], fill=RED, width=2)
+
+
+def art_energy(d, x, y, w, h):
+    d.rectangle([x, y, x + w, y + h], fill=MUSTARD)
+    cx, cy = x + w // 2 - 14, y + h // 2
+    d.ellipse([cx - 12, cy - 14, cx + 12, cy + 10], fill=WHITE,
+              outline=NAVY, width=2)
+    d.rectangle([cx - 5, cy + 10, cx + 5, cy + 16], fill=NAVY)
+    d.text((cx - 5, cy - 9), "£", font=font(13, bold=True), fill=NAVY)
+    d.text((x + w - 52, y + h - 16), "+26%", font=font(11, bold=True),
+           fill=RED)
+
+
+def art_wage(d, x, y, w, h):
+    d.rectangle([x, y, x + w, y + h], fill=GREEN)
+    d.rectangle([x + 8, y + 6, x + w - 8, y + h - 6], fill=CREAM,
+                outline=NAVY, width=2)
+    d.ellipse([x + w // 2 - 12, y + h // 2 - 10, x + w // 2 + 12,
+               y + h // 2 + 10], fill=GREEN)
+    d.text((x + w // 2 - 5, y + h // 2 - 7), "$", font=font(12, bold=True),
+           fill=WHITE)
+    d.text((x + 12, y + h - 18), "17,500", font=font(9, bold=True), fill=NAVY)
+
+
+def art_mine(d, x, y, w, h):
+    d.rectangle([x, y, x + w, y + h], fill=BROWN)
+    d.rectangle([x + w // 2 - 12, y + 4, x + w // 2 + 12, y + h - 6],
+                fill=(40, 26, 10))
     for i in range(3):
-        yy = y + int(h * (0.12 + i * 0.28))
-        d.arc([x + 6, yy, x + w - 6, yy + int(h * 0.28)], 180, 360,
-              fill=NAVY, width=3)
-    d.rectangle([x + 12, y + h - 14, x + 26, y + h - 4], fill=NAVY2)
-    d.rectangle([x + 30, y + h - 18, x + 42, y + h - 4], fill=NAVY2)
-    d.rectangle([x + 46, y + h - 12, x + 58, y + h - 4], fill=NAVY2)
+        yy = y + int(h * (0.30 + i * 0.22))
+        d.arc([x + 6, yy, x + w - 6, yy + 10], 180, 360, fill=SKY, width=2)
+    d.ellipse([x + 8, y + 6, x + 18, y + 16], fill=MUSTARD)
 
 
-def art_hongkong(d, x, y, w, h):
-    d.rectangle([x, y, x + w, y + h], fill=(35, 56, 99))
-    for i, bh in enumerate([22, 34, 26, 40, 30]):
-        bx = x + 10 + i * 15
-        d.rectangle([bx, y + h - 8 - bh, bx + 11, y + h - 8], fill=(200, 200, 200))
-        d.rectangle([bx + 3, y + h - 8 - bh + 5, bx + 8, y + h - 8 - bh + 10],
-                    fill=MUSTARD)
-    d.polygon([(x + w - 22, y + 8), (x + w - 14, y + 8), (x + w - 18, y + 22)],
-              fill=(255, 200, 60))
-    d.ellipse([x + w - 24, y + 22, x + w - 12, y + 30], fill=(255, 200, 60))
+def art_gaza(d, x, y, w, h):
+    d.rectangle([x, y, x + w, y + h], fill=(120, 120, 120))
+    for i, bh in enumerate([20, 30, 24]):
+        bx = x + 10 + i * 22
+        d.rectangle([bx, y + h - 6 - bh, bx + 18, y + h - 6], fill=NAVY2)
+        d.rectangle([bx + 5, y + h - 6 - bh + 5, bx + 13,
+                     y + h - 6 - bh + 11], fill=MUSTARD)
+    d.ellipse([x + w - 26, y + 4, x + w - 6, y + 24], fill=CORAL)
+    d.ellipse([x + w - 21, y + 9, x + w - 11, y + 19], fill=MUSTARD)
 
 
-ART = {"tariffs": art_tariffs, "rocket": art_rocket, "tehran": art_tehran,
-       "stocks": art_stocks, "island": art_island, "aden": art_aden,
-       "chip": art_chip, "blast": art_blast, "crown": art_crown,
-       "drought": art_drought, "reef": art_reef, "waves": art_waves,
-       "hongkong": art_hongkong}
+def art_scales(d, x, y, w, h):
+    d.rectangle([x, y, x + w, y + h], fill=NAVY)
+    cx = x + w // 2
+    d.line([cx, y + 6, cx, y + h - 8], fill=MUSTARD, width=2)
+    d.line([cx - 20, y + 10, cx + 20, y + 10], fill=MUSTARD, width=2)
+    for px in (cx - 20, cx + 20):
+        d.line([px, y + 10, px, y + 18], fill=MUSTARD, width=1)
+        d.polygon([(px - 8, y + 18), (px + 8, y + 18), (px, y + 26)],
+                  fill=MUSTARD)
+    d.rectangle([cx - 12, y + h - 8, cx + 12, y + h - 4], fill=MUSTARD)
+
+
+def art_court(d, x, y, w, h):
+    d.rectangle([x, y, x + w, y + h], fill=NAVY2)
+    d.polygon([(x + 6, y + 10), (x + w - 6, y + 10), (x + w // 2, y + 2)],
+              fill=WHITE)
+    for i in range(4):
+        bx = x + 10 + i * 18
+        d.rectangle([bx, y + 12, bx + 8, y + h - 6], fill=WHITE)
+    d.rectangle([x + 6, y + h - 6, x + w - 6, y + h - 2], fill=WHITE)
+
+
+def art_tanker(d, x, y, w, h):
+    d.rectangle([x, y, x + w, y + h], fill=(40, 40, 40))
+    d.ellipse([x + w - 34, y + 2, x + w - 10, y + 26], fill=CORAL)
+    d.ellipse([x + w - 28, y + 8, x + w - 16, y + 20], fill=MUSTARD)
+    d.rectangle([x + 8, y + h - 22, x + w - 36, y + h - 10], fill=(200, 200, 200))
+    d.rectangle([x + w - 34, y + h - 20, x + w - 10, y + h - 10], fill=CORAL)
+    for wx in (x + 16, x + w - 44, x + w - 20):
+        d.ellipse([wx - 4, y + h - 10, wx + 4, y + h - 2], fill=INK)
+
+
+ART = {"tariffs": art_tariffs, "chart": art_chart, "rocket": art_rocket,
+       "island": art_island, "strikes": art_strikes, "drone": art_drone,
+       "energy": art_energy, "wage": art_wage, "mine": art_mine,
+       "gaza": art_gaza, "scales": art_scales, "court": art_court,
+       "tanker": art_tanker}
 
 
 def draw_hero(d, s, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=WHITE, outline=NAVY, width=2)
-    d.rectangle([x, y, x + w, y + 18], fill=NAVY)
-    d.text((x + 8, y + 3), s["kicker"], font=font(9, bold=True), fill=MUSTARD)
-    hy = y + 22
-    hf = fit_size(d, s["headline"], w - 16, 20, 20, bold=True, max_lines=3)
-    hy = text_block(d, x + 8, hy, s["headline"], hf, INK, w - 16, leading=23)
-    ay = hy + 4
-    ah = y + h - 52 - ay
-    ART[s["art"]](d, x + 8, ay, w - 16, max(ah, 30))
-    dy = y + h - 48
-    text_block(d, x + 8, dy, s["deck"], font(11), INK, w - 16, leading=13)
-    d.text((x + 8, y + h - 15), s["source"], font=font(8, bold=True), fill=GREY)
+    d.rectangle([x, y, x + w, y + 17], fill=NAVY)
+    d.text((x + 8, y + 3), s["kicker"], font=font(8, bold=True), fill=MUSTARD)
+    hy = y + 21
+    hf = fit_size(d, s["headline"], w - 16, 18, 15, bold=True, max_lines=2)
+    hy = text_block(d, x + 8, hy, s["headline"], hf, INK, w - 16, leading=20)
+    deck_y = y + h - 56
+    why_y = y + h - 30
+    ART[s["art"]](d, x + 8, hy + 3, w - 16, max(deck_y - 5 - (hy + 3), 20))
+    text_block(d, x + 8, deck_y, s["deck"], font(11), INK, w - 16,
+               leading=12)
+    why = "WHY IT MATTERS: " + s["why"]
+    wfnt = font(9)
+    if d.textlength(why, font=wfnt) > w - 16:
+        wfnt = font(8)
+    d.text((x + 8, why_y), why, font=wfnt, fill=RED)
+    d.text((x + 8, y + h - 14), s["source"], font=font(8, bold=True),
+           fill=GREY)
+    label = VER_LABELS[s["ver"]]
     fnt = font(8, bold=True)
-    cw = int(d.textlength(s["chip"], font=fnt)) + 10
-    chip(d, x + w - 8 - cw, y + h - 16, s["chip"])
+    cw = int(d.textlength(label, font=fnt)) + 10
+    ver_chip(d, x + w - 8 - cw, y + h - 15, label)
 
 
 def draw_small(d, s, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=WHITE, outline=NAVY, width=1)
-    d.rectangle([x, y, x + w, y + 14], fill=NAVY)
-    d.text((x + 6, y + 2), s["kicker"], font=font(7, bold=True), fill=MUSTARD)
-    hy = y + 17
-    hf = fit_size(d, s["headline"], w - 12, 15, 15, bold=True, max_lines=2)
-    hy = text_block(d, x + 6, hy, s["headline"], hf, INK, w - 12, leading=17)
-    deck_y = y + h - 38
-    ay = hy + 3
-    ah = deck_y - 4 - ay
-    ART[s["art"]](d, x + 6, ay, w - 12, max(ah, 20))
-    text_block(d, x + 6, deck_y, s["deck"], font(10), INK, w - 12, leading=12)
-    d.text((x + 6, y + h - 13), s["source"], font=font(7, bold=True), fill=GREY)
-    fnt = font(8, bold=True)
-    cw = int(d.textlength(s["chip"], font=fnt)) + 10
-    chip(d, x + w - 6 - cw, y + h - 14, s["chip"])
+    # number badge, top left
+    d.ellipse([x + 4, y + 4, x + 22, y + 22], fill=RED, outline=WHITE,
+              width=1)
+    fnt = font(9, bold=True)
+    num = str(s["num"])
+    d.text((x + 13 - d.textlength(num, font=fnt) / 2, y + 7), num,
+           font=fnt, fill=WHITE)
+    # stat chip, top right
+    fnt = font(7, bold=True)
+    cw = int(d.textlength(s["stat"], font=fnt)) + 10
+    d.rounded_rectangle([x + w - 4 - cw, y + 5, x + w - 4, y + 18], radius=6,
+                        fill=NAVY)
+    d.text((x + w - 4 - cw + 5, y + 7), s["stat"], font=fnt, fill=WHITE)
+    # kicker
+    d.text((x + 6, y + 25), s["kicker"], font=font(7, bold=True), fill=NAVY)
+    hy = y + 36
+    hf = fit_size(d, s["headline"], w - 12, 14, 12, bold=True, max_lines=2)
+    hy = text_block(d, x + 6, hy, s["headline"], hf, INK, w - 12,
+                    leading=15)
+    deck_y = y + h - 25
+    ART[s["art"]](d, x + 6, hy + 3, w - 12, max(deck_y - 3 - (hy + 3), 18))
+    text_block(d, x + 6, deck_y, s["deck"], font(10), INK, w - 12,
+               leading=11)
 
 
 # ---- world map (rough equirectangular land, lon -170..190, lat 75..-55) ----
@@ -481,31 +624,26 @@ CONTINENTS = [
      (174, -41), (172, -43), (168, -46)],
 ]
 
-# pins: (story, lon, lat, dx, dy) — dx/dy nudge the drawn pin off the true spot
+# pins: (story, lon, lat, dx, dy) - dx/dy nudge the drawn pin off the true
+# spot so the Gaza / Jerusalem / Giza cluster does not collide. Every nudged
+# centre still sits on drawn land (verified from render pixels).
 PINS = [
-    (1, -77.0, 39.0, 0, 0),
-    (2, 98.5, 39.8, -6, -4),
-    (3, 51.4, 35.7, 0, 0),
-    (4, 127.0, 37.5, -10, 0),
-    (5, 160.0, -9.4, 0, 0),
-    (6, 45.0, 12.8, -4, 0),
-    (7, 121.6, 25.0, 0, 0),
-    (8, -91.3, 40.8, -8, -6),
-    (9, -66.1, 18.5, 0, 0),
-    (10, 178.4, -17.7, 0, 0),
-    (11, 146.5, -19.0, -4, 0),
-    (12, -122.4, 37.8, 6, 0),
-    (13, 114.2, 22.3, -12, 6),
+    (1, -77.0, 39.0, 0, 0),      # Washington
+    (2, 127.0, 37.5, -2, -1),    # Seoul (nudge: crude polygon's peninsula is 1px wide)
+    (3, 98.5, 39.8, 0, 0),       # Jiuquan
+    (4, 30.5, 50.4, 0, 0),       # Kyiv
+    (5, 50.1, 26.6, 8, 0),       # Ras Tanura
+    (6, -0.1, 51.5, 0, 0),       # London
+    (7, 149.1, -35.3, 0, 0),     # Canberra
+    (8, 90.4, 23.8, 0, 0),       # Dhaka
+    (9, 106.8, -6.6, 0, -1),     # Bogor (nudge: centre was 1px off the Java strip)
+    (10, 34.5, 31.5, -18, 20),   # Gaza City
+    (11, 18.4, -33.9, 0, -1),    # Cape Town (nudge: centre was on the coastline)
+    (12, 35.2, 31.8, 12, -12),   # Jerusalem
+    (13, 31.2, 30.0, 2, 20),     # Giza
 ]
 
-# small islands drawn exaggerated (a few px) so their pins sit on land:
-# (lon, lat, rx, ry) in map px
-ISLANDS = [
-    (121.0, 23.7, 12, 11),  # Taiwan — pin 7 sits fully on it
-    (160.0, -9.4, 13, 12),  # Solomon Islands — green extends past pin 5
-    (178.4, -17.7, 13, 12),  # Fiji — green extends past pin 10
-    (-66.1, 18.5, 13, 12),  # Puerto Rico — green extends past pin 9
-]
+PIN_R = 7
 
 
 def draw_map(d, x, y, w, h):
@@ -519,117 +657,149 @@ def draw_map(d, x, y, w, h):
     for poly in CONTINENTS:
         pts = [px(lon, lat) for lon, lat in poly]
         d.polygon(pts, fill=LAND)
-    for lon, lat, rx, ry in ISLANDS:
-        cx, cy = px(lon, lat)
-        d.ellipse([cx - rx, cy - ry, cx + rx, cy + ry], fill=LAND)
     for num, lon, lat, dx, dy in PINS:
+        story = STORIES[num - 1]
         tx, ty = px(lon, lat)
         cx, cy = tx + dx, ty + dy
         if dx or dy:
             d.line([tx, ty, cx, cy], fill=NAVY, width=1)
             d.ellipse([tx - 2, ty - 2, tx + 2, ty + 2], fill=NAVY)
-        d.ellipse([cx - 8, cy - 8, cx + 8, cy + 8], fill=RED,
-                  outline=WHITE, width=2)
-        fnt = font(8, bold=True)
+        d.ellipse([cx - PIN_R, cy - PIN_R, cx + PIN_R, cy + PIN_R],
+                  fill=REGION_COLORS[story["region"]], outline=WHITE,
+                  width=2)
+        fnt = font(7, bold=True)
         tw = d.textlength(str(num), font=fnt)
-        d.text((cx - tw / 2, cy - 6), str(num), font=fnt, fill=WHITE)
-    # redraw the map border (island blobs near the edge may overdraw it)
+        d.text((cx - tw / 2, cy - 5), str(num), font=fnt, fill=WHITE)
     d.rectangle([x, y, x + w, y + h], outline=NAVY, width=1)
+
+
+def draw_legend(d, x, y):
+    # 10 regions, 2 columns x 5 rows
+    fnt = font(7, bold=True)
+    for i, name in enumerate(REGION_ORDER):
+        col, row = divmod(i, 5)
+        lx = x + col * 170
+        ly = y + row * 12
+        d.ellipse([lx, ly, lx + 8, ly + 8], fill=REGION_COLORS[name],
+                  outline=NAVY, width=1)
+        d.text((lx + 11, ly), name, font=fnt, fill=INK)
 
 
 # ---- compose ----
 def build():
+    n = len(STORIES)
+    regions = Counter(s["region"] for s in STORIES)
+    fields = Counter(s["field"] for s in STORIES)
+    assert n == 50, n
+    assert sum(regions.values()) == 50, regions
+    assert sum(fields.values()) == 50, fields
+    assert set(regions) == set(REGION_ORDER), set(regions) ^ set(REGION_ORDER)
+    assert set(fields) == set(FIELD_ORDER), set(fields) ^ set(FIELD_ORDER)
+    assert sorted(s["num"] for s in STORIES) == list(range(1, 51))
+    print("stories:", n, "| regions:", dict(regions), "| fields:",
+          dict(fields))
+
     img = Image.new("RGB", (W, H), CREAM)
     d = ImageDraw.Draw(img)
 
-    # masthead
-    d.rectangle([0, 0, W, 108], fill=NAVY)
-    d.text((W // 2 - d.textlength("THE DAY IN WORLD NEWS", font=font(13, bold=True)) / 2,
-            7), "THE DAY IN WORLD NEWS", font=font(13, bold=True), fill=MUSTARD)
-    mf = font(46, bold=True, serif=True)
+    # navy top strip
+    d.rectangle([0, 0, W, 24], fill=NAVY)
+    d.text((12, 6), "THE WORLD IN ONE DAY", font=font(9, bold=True),
+           fill=WHITE)
+    strip = ("%d STORIES  •  %d REGIONS  •  %d FIELDS  •  ALL FIRST REPORTED "
+             "ON WEDNESDAY 25 NOVEMBER 2026"
+             % (n, len(REGION_ORDER), len(FIELD_ORDER)))
+    d.text((W - 12 - d.textlength(strip, font=font(9, bold=True)), 6), strip,
+           font=font(9, bold=True), fill=MUSTARD)
+
+    # giant serif masthead
+    mf = font(38, bold=True, serif=True)
     title = "Wednesday 25 November 2026"
-    d.text((W // 2 - d.textlength(title, font=mf) / 2, 24), title,
-           font=mf, fill=WHITE)
-    sub = "34 STORIES  •  7 REGIONS  •  ONE DAY"
-    d.text((W // 2 - d.textlength(sub, font=font(13, bold=True)) / 2, 86),
-           sub, font=font(13, bold=True), fill=WHITE)
-    # ticker
-    tick = ("TARIFFS UNVEILED  •  SHENZHOU-24 LIFTS OFF  •  "
-            "IRAN SETS SEVEN CONDITIONS")
-    d.text((W // 2 - d.textlength(tick, font=font(11, bold=True)) / 2, 110),
-           tick, font=font(11, bold=True), fill=NAVY)
-    # multicolour stripe
-    stripe = [CORAL, MUSTARD, TEAL, NAVY2, (200, 60, 120)]
-    for i, c in enumerate(stripe):
-        d.rectangle([i * W // 5, 126, (i + 1) * W // 5, 131], fill=c)
+    d.text((W // 2 - d.textlength(title, font=mf) / 2, 28), title,
+           font=mf, fill=NAVY)
 
-    # UTC timeline strip: one line per event in chronological columns,
-    # 00-24 axis below with a dot at each event's true UTC position.
-    tx0, tx1, ty = 12, 1012, 152
-    d.line([tx0, ty, tx1, ty], fill=NAVY, width=2)
-    for hh in range(0, 25, 4):
-        xx = tx0 + hh / 24 * (tx1 - tx0)
-        d.line([xx, ty - 4, xx, ty + 4], fill=NAVY, width=2)
-        lab = "%02d" % hh
-        d.text((xx - 6, ty + 6), lab, font=font(7), fill=GREY)
-    colw = (W - 24) // 6
-    for i, (tm, lab) in enumerate(TIMELINE):
-        cx = 12 + i * colw
-        hour = int(tm.split(":")[0]) + int(tm.split(":")[1]) / 60.0
-        xx = tx0 + hour / 24 * (tx1 - tx0)
-        d.ellipse([xx - 3, ty - 3, xx + 3, ty + 3], fill=CORAL)
-        tf = font(9, bold=True)
-        d.text((cx + 4, 134), tm, font=tf, fill=CORAL)
-        tw = d.textlength(tm, font=tf)
-        d.text((cx + 4 + tw + 5, 134), lab, font=font(8, bold=True), fill=INK)
+    # red subhead: the 3 top stories
+    sub = ("US tariffs up to 20%  •  Kospi closes −6.2%  •  "
+           "Pakistan's first astronaut docks at Tiangong")
+    sf = font(12, serif=True)
+    d.text((W // 2 - d.textlength(sub, font=sf) / 2, 72), sub, font=sf,
+           fill=RED)
 
-    # 6 big numbers
-    bw = (W - 24 - 5 * 6) // 6
+    # region bar: coloured chips, counts from STORIES
+    chips = []
+    fnt = font(8, bold=True)
+    total = 0
+    for name in REGION_ORDER:
+        label = "%s %d" % (name, regions[name])
+        chips.append((label, int(d.textlength(label, font=fnt)) + 12))
+        total += chips[-1][1] + 6
+    total -= 6
+    cx = (W - total) // 2
+    for (label, cw), name in zip(chips, REGION_ORDER):
+        d.rounded_rectangle([cx, 90, cx + cw, 108], radius=8,
+                            fill=REGION_COLORS[name])
+        d.text((cx + 6, 94), label, font=fnt,
+               fill=REGION_TEXT.get(name, WHITE))
+        cx += cw + 6
+
+    # 21 fields row (2 lines, centred)
+    # non-breaking space keeps each "Field N" pair on one line
+    field_text = "21 FIELDS — " + "  •  ".join(
+        "%s %d" % (f, fields[f]) for f in FIELD_ORDER)
+    text_block(d, 12, 112, field_text, font(8), INK, 1000, leading=11,
+               align="center")
+
+    # 5 big numbers
+    bw = (W - 24 - 4 * 6) // 5
     for i, (num, lab) in enumerate(NUMBERS):
         bx = 12 + i * (bw + 6)
-        d.rectangle([bx, 165, bx + bw, 199], fill=WHITE, outline=NAVY, width=1)
+        d.rectangle([bx, 138, bx + bw, 172], fill=WHITE, outline=NAVY,
+                    width=1)
         nf = fit_size(d, num, bw - 10, 22, 16, bold=True, max_lines=1)
-        d.text((bx + bw // 2 - d.textlength(num, font=nf) / 2, 167), num,
+        d.text((bx + bw // 2 - d.textlength(num, font=nf) / 2, 140), num,
                font=nf, fill=NAVY)
-        text_block(d, bx + 4, 188, lab, font(7, bold=True), GREY, bw - 8,
+        text_block(d, bx + 4, 162, lab, font(7, bold=True), GREY, bw - 8,
                    leading=8, align="center")
-
-    # region bar
-    rb = "  •  ".join("%s %d" % (name, n) for name, n in REGIONS)
-    d.text((W // 2 - d.textlength(rb, font=font(10, bold=True)) / 2, 203),
-           rb, font=font(10, bold=True), fill=NAVY)
 
     # heroes
     hw = (W - 24 - 12) // 3
     for i, s in enumerate(HEROES):
-        draw_hero(d, s, 12 + i * (hw + 6), 219, hw, 200)
+        draw_hero(d, s, 12 + i * (hw + 6), 176, hw, 180)
 
     # small panels, 2 rows of 5
     sw = (W - 24 - 4 * 6) // 5
     for i, s in enumerate(SMALLS):
         row, col = divmod(i, 5)
-        draw_small(d, s, 12 + col * (sw + 6), 423 + row * 142, sw, 138)
+        draw_small(d, s, 12 + col * (sw + 6), 360 + row * 132, sw, 128)
 
     # map + ALSO ON
-    d.text((12, 707), "WHERE IT HAPPENED", font=font(11, bold=True), fill=NAVY)
-    d.text((348, 707), "ALSO ON", font=font(11, bold=True), fill=NAVY)
-    draw_map(d, 12, 723, 330, 210)
-    d.text((12, 937), "Pins 1–13 mark the panel stories.",
-           font=font(8), fill=GREY)
+    d.text((12, 626), "WHERE IT HAPPENED", font=font(11, bold=True),
+           fill=NAVY)
+    d.text((348, 626), "ALSO ON 14–50", font=font(11, bold=True), fill=NAVY)
+    draw_map(d, 12, 644, 330, 180)
+    draw_legend(d, 12, 830)
     colw2 = (1012 - 348 - 12) // 2
-    for i, (num, text, src, _reg) in enumerate(ALSO_ON):
-        col, row = divmod(i, 11)
+    for i, s in enumerate(ALSO_ON):
+        col, row = divmod(i, 19)
         ax = 348 + col * (colw2 + 12)
-        ay = 723 + row * 21
-        full = "%d. %s — %s" % (num, text, src)
-        text_block(d, ax, ay, full, font(9), INK, colw2, leading=10)
+        ay = 644 + row * 13
+        full = "%d. %s — %s %s" % (s["num"], s["text"], s["source"],
+                                   s["ver"])
+        size = 9
+        while size > 7:
+            fnt = font(size)
+            if d.textlength(full, font=fnt) <= colw2:
+                break
+            size -= 1
+        d.text((ax, ay), full, font=font(size), fill=INK)
 
     # DATE CHECK
-    d.rectangle([12, 957, 1012, 1001], fill=(255, 235, 235), outline=RED, width=1)
-    text_block(d, 18, 960, DATE_CHECK, font(8), INK, 988, leading=10)
+    d.rectangle([12, 892, 1012, 976], fill=(255, 235, 235), outline=RED,
+                width=1)
+    text_block(d, 18, 895, DATE_CHECK, font(8), INK, 988, leading=10)
 
     # footer
-    text_block(d, 12, 1004, FOOTER, font(8), GREY, 1000, leading=10)
+    text_block(d, 12, 980, FOOTER, font(8), GREY, 1000, leading=10)
 
     img.save(OUT, optimize=True)
     print("wrote", OUT, os.path.getsize(OUT), "bytes")
