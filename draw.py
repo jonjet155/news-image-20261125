@@ -152,18 +152,18 @@ STORIES = [
     dict(num=6, region="EUROPE", field="Energy",
          kicker="06  •  LONDON  •  ENERGY",
          headline="UK energy price cap to rise 26% in January",
-         deck="Typical bill £1,723 to £2,166 from 1 January, Ofgem says.",
+         deck="Typical bill £1,723 → £2,166 (+£443), Ofgem says.",
          stat="£2,166", art="energy"),
     dict(num=7, region="OCEANIA", field="Diplomacy",
          kicker="07  •  CANBERRA  •  DIPLOMACY",
          headline="Solomons signs security pact with Australia",
-         deck="New pact names Canberra first; the treaty excludes China.",
+         deck="A$740m over 10 years; names Canberra first, excludes China.",
          stat="CANBERRA FIRST", art="island"),
     dict(num=8, region="SOUTH ASIA", field="Labour",
          kicker="08  •  DHAKA  •  LABOUR",
          headline="Garment workers offered higher minimum wage",
-         deck="Board lifts the minimum 40% in taka, to 17,500 a month.",
-         stat="17,500 TAKA", art="wage"),
+         deck="Board lifts the minimum 36%, 12,500 → 17,000 taka a month.",
+         stat="17,000 TAKA", art="wage"),
     dict(num=9, region="EAST & SE ASIA", field="Disaster",
          kicker="09  •  BOGOR  •  DISASTER",
          headline="9 dead, 17 still trapped in flooded gold mine",
@@ -361,6 +361,16 @@ def art_tariffs(d, x, y, w, h):
         cfnt = font(7, bold=True)
         d.text((bx + 26 - d.textlength(country, font=cfnt) / 2, by + 20),
                country, font=cfnt, fill=WHITE)
+    # v8: stacked container on the EU box + red up-arrow over China
+    d.rectangle([x + 104, y + h - 54, x + 156, y + h - 42], fill=MUSTARD,
+                outline=WHITE, width=2)
+    sfnt = font(7, bold=True)
+    d.text((x + 130 - d.textlength("15%", font=sfnt) / 2, y + h - 52),
+           "15%", font=sfnt, fill=NAVY)
+    ax = x + 72
+    d.polygon([(ax - 6, y + h - 47), (ax + 6, y + h - 47), (ax, y + h - 54)],
+              fill=RED)
+    d.rectangle([ax - 2, y + h - 47, ax + 2, y + h - 42], fill=RED)
     # gantry crane, right: mast, jib, cable, hanging container (Japan 15%)
     d.rectangle([x + w - 52, y + 4, x + w - 46, y + h - 8], fill=NAVY)
     d.rectangle([x + w - 108, y + 4, x + w - 40, y + 10], fill=NAVY)
@@ -379,6 +389,13 @@ def art_tariffs(d, x, y, w, h):
 
 def art_chart(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=RED)
+    # v8: faint gridlines + KOSPI label + big down-arrow at the drop
+    for gy in (y + h // 3, y + 2 * h // 3):
+        d.line([x + 4, gy, x + w - 4, gy], fill=(255, 150, 150), width=1)
+    kfnt = font(9, bold=True)
+    lab = "KOSPI 4,697.51"
+    d.text((x + w - 8 - d.textlength(lab, font=kfnt), y + 3), lab,
+           font=kfnt, fill=WHITE)
     d.line([(x + 8, y + 10), (x + w // 3, y + 16), (x + 2 * w // 3, y + 30),
             (x + w - 10, y + h - 8)], fill=WHITE, width=4)
     for px, py in [(x + 8, y + 10), (x + w // 3, y + 16),
@@ -386,6 +403,10 @@ def art_chart(d, x, y, w, h):
         d.ellipse([px - 4, py - 4, px + 4, py + 4], fill=MUSTARD)
     d.text((x + 10, y + h - 20), "−6.2%", font=font(15, bold=True),
            fill=WHITE)
+    ex, ey = x + w - 10, y + h - 8
+    d.rectangle([ex - 20, ey - 26, ex - 16, ey - 14], fill=MUSTARD)
+    d.polygon([(ex - 24, ey - 14), (ex - 12, ey - 14), (ex - 18, ey - 4)],
+              fill=MUSTARD)
 
 
 def art_rocket(d, x, y, w, h):
@@ -393,6 +414,20 @@ def art_rocket(d, x, y, w, h):
     for sx, sy in [(14, 12), (40, 26), (70, 8), (w - 30, 16),
                    (w - 52, 34), (24, 18), (w - 18, 52)]:
         d.ellipse([x + sx - 2, y + sy - 2, x + sx + 2, y + sy + 2], fill=WHITE)
+    # v8: station module, top right (capsule + solar wing + windows) and
+    # a floating astronaut, mid-left - the docking reads at a glance
+    d.rectangle([x + w - 128, y + 11, x + w - 102, y + 15], fill=BLUE,
+                outline=WHITE, width=1)
+    d.rounded_rectangle([x + w - 100, y + 8, x + w - 8, y + 18], radius=5,
+                        fill=(210, 210, 210), outline=WHITE, width=1)
+    for wx in (x + w - 88, x + w - 64, x + w - 40):
+        d.ellipse([wx - 2, y + 11, wx + 2, y + 15], fill=NAVY)
+    d.ellipse([x + 42, y + 20, x + 54, y + 32], fill=WHITE,
+              outline=NAVY, width=1)
+    d.ellipse([x + 45, y + 23, x + 51, y + 29], fill=NAVY)
+    d.rectangle([x + 41, y + 32, x + 55, y + 40], fill=WHITE,
+                outline=NAVY, width=1)
+    d.rectangle([x + 56, y + 34, x + 60, y + 40], fill=CORAL)
     cx = x + w // 2
     bw = max(10, w // 12)
     nose = int(h * 0.30)
@@ -428,10 +463,23 @@ def art_island(d, x, y, w, h):
     d.polygon([(x + w // 2, y + int(h * 0.18)),
                (x + w // 2 + 18, y + int(h * 0.28)),
                (x + w // 2, y + int(h * 0.36))], fill=MUSTARD)
+    # v8: gold coin for the A$740m + birds in the sky
+    d.ellipse([x + w - 30, y + 3, x + w - 12, y + 21], fill=MUSTARD,
+              outline=NAVY, width=1)
+    d.text((x + w - 24, y + 6), "$", font=font(11, bold=True), fill=NAVY)
+    for bx, by in [(x + 12, y + 8), (x + 26, y + 14)]:
+        d.arc([bx, by, bx + 8, by + 5], 180, 360, fill=NAVY, width=1)
 
 
 def art_strikes(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=NAVY)
+    # v8: smoke puffs + a lightning bolt over the blasts
+    for sx, sy, r in [(x + 26, y + 5, 5), (x + w - 30, y + 7, 4)]:
+        d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(150, 150, 150))
+    d.polygon([(x + w - 16, y + 3), (x + w - 9, y + 3), (x + w - 14, y + 13),
+               (x + w - 10, y + 13), (x + w - 18, y + 25),
+               (x + w - 14, y + 25), (x + w - 11, y + 15),
+               (x + w - 15, y + 15)], fill=MUSTARD)
     for cx, cy, r in [(x + w // 4, y + h // 3, 9),
                       (x + w // 2, y + h // 2, 12),
                       (x + 3 * w // 4, y + h // 3, 8)]:
@@ -454,28 +502,44 @@ def art_drone(d, x, y, w, h):
     d.ellipse([cx - 4, cy - 3, cx + 4, cy + 3], fill=RED)
     d.line([cx + 16, cy + 10, cx + 30, cy + 14], fill=RED, width=2)
     d.line([cx + 30, cy + 14, cx + 22, cy + 16], fill=RED, width=2)
+    # v8: intercept burst where the drone is hit
+    bx, by = cx + 28, cy + 4
+    d.polygon([(bx, by - 7), (bx + 2, by - 2), (bx + 7, by - 2),
+               (bx + 3, by + 2), (bx + 5, by + 7), (bx, by + 4),
+               (bx - 5, by + 7), (bx - 3, by + 2), (bx - 7, by - 2),
+               (bx - 2, by - 2)], fill=MUSTARD, outline=RED)
 
 
 def art_energy(d, x, y, w, h):
+    # v8: the bill itself - old figure struck through, new figure bold
     d.rectangle([x, y, x + w, y + h], fill=MUSTARD)
-    cx, cy = x + w // 2 - 14, y + h // 2
-    d.ellipse([cx - 12, cy - 14, cx + 12, cy + 10], fill=WHITE,
-              outline=NAVY, width=2)
-    d.rectangle([cx - 5, cy + 10, cx + 5, cy + 16], fill=NAVY)
-    d.text((cx - 5, cy - 9), "£", font=font(13, bold=True), fill=NAVY)
+    d.rounded_rectangle([x + 6, y + 4, x + 122, y + h - 4], radius=4,
+                        fill=WHITE, outline=NAVY, width=1)
+    ofnt = font(10)
+    d.text((x + 12, y + h // 2 - 6), "£1,723", font=ofnt, fill=GREY)
+    ow = d.textlength("£1,723", font=ofnt)
+    d.line([x + 12, y + h // 2 - 1, x + 12 + ow, y + h // 2 - 1],
+           fill=RED, width=2)
+    d.text((x + 14 + ow, y + h // 2 - 6), "→", font=ofnt, fill=NAVY)
+    d.text((x + 30 + ow, y + h // 2 - 7), "£2,166",
+           font=font(11, bold=True), fill=NAVY)
     d.text((x + w - 52, y + h - 16), "+26%", font=font(11, bold=True),
            fill=RED)
 
 
 def art_wage(d, x, y, w, h):
+    # v8: shirt + the verified range 12,500 -> 17,000 taka ($100 -> $136)
     d.rectangle([x, y, x + w, y + h], fill=GREEN)
-    d.rectangle([x + 8, y + 6, x + w - 8, y + h - 6], fill=CREAM,
+    d.rectangle([x + 8, y + 3, x + w - 8, y + h - 3], fill=CREAM,
                 outline=NAVY, width=2)
-    d.ellipse([x + w // 2 - 12, y + h // 2 - 10, x + w // 2 + 12,
-               y + h // 2 + 10], fill=GREEN)
-    d.text((x + w // 2 - 5, y + h // 2 - 7), "$", font=font(12, bold=True),
-           fill=WHITE)
-    d.text((x + 12, y + h - 18), "17,500", font=font(9, bold=True), fill=NAVY)
+    sx, sy = x + 12, y + 6
+    d.polygon([(sx + 8, sy), (sx + 16, sy), (sx + 22, sy + 3),
+               (sx + 28, sy + 8), (sx + 22, sy + 12), (sx + 22, sy + 18),
+               (sx + 2, sy + 18), (sx + 2, sy + 12), (sx - 4, sy + 8),
+               (sx + 2, sy + 3)], fill=WHITE, outline=NAVY)
+    d.text((x + 52, y + 7), "12,500 → 17,000", font=font(10, bold=True),
+           fill=NAVY)
+    d.text((x + 52, y + 18), "($100 → $136)", font=font(7), fill=NAVY)
 
 
 def art_mine(d, x, y, w, h):
@@ -486,10 +550,22 @@ def art_mine(d, x, y, w, h):
         yy = y + int(h * (0.30 + i * 0.22))
         d.arc([x + 6, yy, x + w - 6, yy + 10], 180, 360, fill=SKY, width=2)
     d.ellipse([x + 8, y + 6, x + 18, y + 16], fill=MUSTARD)
+    # v8: flood water zigzag at the shaft base + a miner's helmet, top right
+    cx = x + w // 2
+    d.line([(cx - 12, y + h - 12), (cx - 6, y + h - 15), (cx, y + h - 12),
+            (cx + 6, y + h - 15), (cx + 12, y + h - 12)], fill=SKY, width=2)
+    d.pieslice([x + w - 26, y + 4, x + w - 12, y + 16], 180, 360,
+               fill=MUSTARD, outline=NAVY)
+    d.rectangle([x + w - 26, y + 15, x + w - 12, y + 17], fill=MUSTARD,
+                outline=NAVY)
 
 
 def art_gaza(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=(120, 120, 120))
+    # v8: smoke rising over the buildings
+    for sx, sy, r in [(x + 20, y + 6, 4), (x + 44, y + 4, 5),
+                      (x + 66, y + 7, 4)]:
+        d.ellipse([sx - r, sy - r, sx + r, sy + r], fill=(90, 90, 90))
     for i, bh in enumerate([20, 30, 24]):
         bx = x + 10 + i * 22
         d.rectangle([bx, y + h - 6 - bh, bx + 18, y + h - 6], fill=NAVY2)
@@ -509,6 +585,11 @@ def art_scales(d, x, y, w, h):
         d.polygon([(px - 8, y + 18), (px + 8, y + 18), (px, y + 26)],
                   fill=MUSTARD)
     d.rectangle([cx - 12, y + h - 8, cx + 12, y + h - 4], fill=MUSTARD)
+    # v8: gavel at the base, right
+    d.line([x + w - 36, y + h - 10, x + w - 16, y + h - 20], fill=BROWN,
+           width=3)
+    d.rectangle([x + w - 20, y + h - 26, x + w - 10, y + h - 18],
+                fill=BROWN)
 
 
 def art_court(d, x, y, w, h):
@@ -519,10 +600,23 @@ def art_court(d, x, y, w, h):
         bx = x + 10 + i * 18
         d.rectangle([bx, y + 12, bx + 8, y + h - 6], fill=WHITE)
     d.rectangle([x + 6, y + h - 6, x + w - 6, y + h - 2], fill=WHITE)
+    # v8: gold star on the pediment + gavel on the steps, right
+    cx = x + w // 2
+    d.polygon([(cx, y + 3), (cx + 2, y + 7), (cx + 6, y + 7), (cx + 3, y + 10),
+               (cx + 4, y + 14), (cx, y + 11), (cx - 4, y + 14),
+               (cx - 3, y + 10), (cx - 6, y + 7), (cx - 2, y + 7)],
+              fill=MUSTARD)
+    d.line([x + w - 30, y + h - 10, x + w - 14, y + h - 18], fill=MUSTARD,
+           width=3)
+    d.rectangle([x + w - 18, y + h - 22, x + w - 10, y + h - 16],
+                fill=MUSTARD)
 
 
 def art_tanker(d, x, y, w, h):
     d.rectangle([x, y, x + w, y + h], fill=(40, 40, 40))
+    # v8: second flame tongue beside the main fire
+    d.ellipse([x + w - 52, y + 8, x + w - 34, y + 26], fill=(255, 140, 0))
+    d.ellipse([x + w - 48, y + 12, x + w - 38, y + 22], fill=MUSTARD)
     d.ellipse([x + w - 34, y + 2, x + w - 10, y + 26], fill=CORAL)
     d.ellipse([x + w - 28, y + 8, x + w - 16, y + 20], fill=MUSTARD)
     d.rectangle([x + 8, y + h - 22, x + w - 36, y + h - 10], fill=(200, 200, 200))
